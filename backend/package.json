@@ -1,1 +1,19 @@
-// Backend dependencies and scripts
+{
+  "name": "ticketing-system",
+  "version": "1.0.0",
+  "description": "Ticketing System backend",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.78.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0"
+  }
+}
