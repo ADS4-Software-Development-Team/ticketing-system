@@ -1,0 +1,1 @@
+// LoginLog model definition
