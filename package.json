@@ -1,1 +1,23 @@
-
+{
+  "name": "ticketing-system",
+  "version": "1.0.0",
+  "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ADS4-Software-Development-Team/ticketing-system.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ADS4-Software-Development-Team/ticketing-system/issues"
+  },
+  "homepage": "https://github.com/ADS4-Software-Development-Team/ticketing-system#readme"
+}

@@ -1,1 +1,0 @@
-// Attachment model definition
