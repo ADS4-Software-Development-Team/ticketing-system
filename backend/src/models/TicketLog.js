@@ -1,1 +1,0 @@
-// TicketLog model definition
