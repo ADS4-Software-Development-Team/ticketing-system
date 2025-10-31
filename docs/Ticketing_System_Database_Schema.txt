@@ -1,0 +1,65 @@
+-- 1️⃣ Create role type
+create type user_role as enum ('admin','technician','normal_user');
+ 
+-- 2️⃣ Users table
+create table if not exists users (
+  _id serial primary key,
+  full_name varchar,
+  email varchar unique,
+  password varchar,
+  role user_role,
+  created_by int references users(_id),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+ 
+-- 3️⃣ Tickets table
+create table if not exists tickets (
+  _id serial primary key,
+  user_id int references users(_id),
+  assigned_to int references users(_id),
+  title varchar,
+  description text,
+  category varchar,
+  priority varchar,
+  status varchar,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+ 
+-- 4️⃣ Attachments table
+create table if not exists attachments (
+  _id serial primary key,
+  ticket_id int references tickets(_id),
+  uploaded_by int references users(_id),
+  file_path varchar,
+  uploaded_at timestamptz default now()
+);
+ 
+-- 5️⃣ Comments table
+create table if not exists comments (
+  _id serial primary key,
+  ticket_id int references tickets(_id),
+  commented_by int references users(_id),
+  comment_text text,
+  commented_at timestamptz default now()
+);
+ 
+-- 6️⃣ Ticket logs table
+create table if not exists ticket_logs (
+  _id serial primary key,
+  ticket_id int references tickets(_id),
+  action_by int references users(_id),
+  action_type varchar,
+  remarks text,
+  action_date timestamptz default now()
+);
+ 
+-- 7️⃣ Login logs table
+create table if not exists login_logs (
+  _id serial primary key,
+  user_id int references users(_id),
+  login_time timestamptz default now(),
+  logout_time timestamptz,
+  ip_address varchar
+);
