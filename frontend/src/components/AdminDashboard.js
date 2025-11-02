@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import axios from 'axios';
 
 const AdminDashboard = () => {
     const [activeSection, setActiveSection] = useState('dashboard');
@@ -97,24 +98,27 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleSubmit = e => {
-        e.preventDefault();
-        const newUser = {
-            id: users.length + 1,
-            full_name: formData.full_name,
-            email: formData.email,
-            user_type: formData.user_type,
-            status: 'active',
-        };
-        setUsers(prev => [...prev, newUser]);
-        setSuccessMessage(`${formData.user_type === 'agent' ? 'Support Agent' : 'User'} created successfully!`);
-        setShowSuccessMessage(true);
-        setFormData({ full_name: '', email: '', password: '', user_type: 'user' });
-        setTimeout(() => {
-            setShowSuccessMessage(false);
-            setShowAddUserForm(false);
-        }, 5000);
-    };
+    const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+        const response = await axios.post('http://localhost:3000/api/users', formData);
+
+        if (response.data.success) {
+            setUsers(prev => [...prev, response.data.user]); // update frontend state
+            setSuccessMessage(`${formData.user_type === 'agent' ? 'Support Agent' : 'User'} created successfully!`);
+            setShowSuccessMessage(true);
+            setFormData({ full_name: '', email: '', password: '', user_type: 'user' });
+            setTimeout(() => {
+                setShowSuccessMessage(false);
+                setShowAddUserForm(false);
+            }, 5000);
+        }
+    } catch (error) {
+        console.error('Error creating user:', error);
+        alert('Failed to create user. Please try again.');
+    }
+};
 
     const handleCancel = () => {
         setShowAddUserForm(false);
