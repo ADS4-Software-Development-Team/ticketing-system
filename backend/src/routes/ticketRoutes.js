@@ -1,3 +1,4 @@
+Tebelelo
 // Ticket routes
 import express from "express";
 import {
@@ -20,5 +21,13 @@ router.get("/:id", authMiddleware, getTicketById);
 // Only agents/admins can update or delete
 router.put("/:id", authMiddleware, roleMiddleware(["agent", "admin"]), updateTicket);
 router.delete("/:id", authMiddleware, roleMiddleware(["admin"]), deleteTicket);
+=======
+import express from "express";
+import { createTicket } from "../controllers/ticketController.js";
+
+const router = express.Router();
+
+router.post("/", createTicket);
+ main
 
 export default router;
