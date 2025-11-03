@@ -1,3 +1,16 @@
+Tebelelo
+// User routes
+import express from "express";
+import { getAllUsers, updateUser, deleteUser } from "../controllers/userController.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
+import { roleMiddleware } from "../middlewares/roleMiddleware.js";
+
+const router = express.Router();
+
+router.get("/", authMiddleware, roleMiddleware(["admin"]), getAllUsers);
+router.put("/:id", authMiddleware, roleMiddleware(["admin"]), updateUser);
+router.delete("/:id", authMiddleware, roleMiddleware(["admin"]), deleteUser);
+
 import express from 'express';
 import bcrypt from 'bcrypt';
 import { supabase } from '../config/db.js';
@@ -34,5 +47,6 @@ router.post('/', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+main
 
 export default router;
