@@ -2,12 +2,12 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import MyTickets from './components/MyTickets';
-import SubmitTicket from './components/SubmitTicket';
-import Dashboard from './components/Dashboard';
+import CreateTicket from './components/CreateTicket';
+import Dashboard from './components/AgentDashboard';
 import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
-import LandingPage from './components/LandingPage';
 import UserDashboard from './components/UserDashboard';
+import AgentDashboard from './components/AgentDashboard';
 
 function App() {
   return (
@@ -19,14 +19,11 @@ function App() {
           <Routes>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/my-tickets" element={<MyTickets />} />
-            <Route path="/submit-ticket" element={<SubmitTicket />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/create-ticket" element={<CreateTicket/>} />
+            <Route path="*" element={<Login />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/user-dash" element={<UserDashboard />} />
-            <Route path="/" element={<LandingPage />} />
-
-            {/* Default route */}
-            <Route path="*" element={<LandingPage />} />
+            <Route path="/agent-dash" element={<AgentDashboard />} />  
           </Routes>
         </main>
       </div>
