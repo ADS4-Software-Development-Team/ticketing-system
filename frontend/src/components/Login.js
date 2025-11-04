@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("admin"); // default role
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   // Registration form state
@@ -19,19 +22,37 @@ const Login = () => {
     confirmPassword: ""
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    console.log("Email:", email);
-    console.log("Password:", password);
-    console.log("Role:", role);
+    try {
+      const response = await axios.post('http://localhost:3000/api/auth/login', {
+        email,
+        password,
+      });
 
-    if (role === "admin") {
-      navigate("/admin");
-    } else if (role === "user") {
-      navigate("/user-dash");
-    } else if (role === "agent") {
-      navigate("/agent-dash");
+      const { user, token } = response.data;
+
+      // Store token and user info in localStorage for session management
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      // Navigate based on the role from the database for security
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else if (user.role === 'agent' || user.role === 'technician') {
+        navigate('/agent-dash');
+      } else {
+        navigate('/user-dash');
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || "Login failed. Please check your credentials.";
+      setError(errorMessage);
+      console.error("Login failed:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,38 +63,36 @@ const Login = () => {
     }));
   };
 
-  const handleRegistrationSubmit = (e) => {
+  const handleRegistrationSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (registrationData.password !== registrationData.confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
 
-    if (!registrationData.name || !registrationData.surname || !registrationData.email || 
-        !registrationData.password || (!registrationData.department && !registrationData.floorNumber)) {
+    if (!registrationData.name || !registrationData.surname || !registrationData.email || !registrationData.password) {
       alert("Please fill in all required fields!");
       return;
     }
 
-    // In a real app, you would send this data to your backend
-    console.log("Registration data:", registrationData);
-    
-    // For demo purposes, just show success message and close modal
-    alert("Registration successful! You can now login.");
-    setShowRegisterModal(false);
-    
-    // Reset form
-    setRegistrationData({
-      name: "",
-      surname: "",
-      email: "",
-      department: "",
-      floorNumber: "",
-      password: "",
-      confirmPassword: ""
-    });
+    try {
+      const response = await axios.post('http://localhost:3000/api/auth/register', {
+        full_name: `${registrationData.name} ${registrationData.surname}`,
+        email: registrationData.email,
+        password: registrationData.password,
+        user_type: 'normal_user' // Explicitly set for office personnel
+      });
+
+      if (response.data.success) {
+        alert("Registration successful! You can now log in.");
+        closeModal();
+      }
+    } catch (error) {
+      console.error("Registration failed:", error.response?.data?.message || error.message);
+      alert(`Registration failed: ${error.response?.data?.message || 'Please try again.'}`);
+    }
   };
 
   const closeModal = () => {
@@ -167,8 +186,10 @@ const Login = () => {
               />
             </div>
 
-            <button type="submit" className="btn btn-primary" id="login-btn">
-              Sign In
+            {error && <p style={{ color: 'red', textAlign: 'center', fontSize: '0.9rem' }}>{error}</p>}
+
+            <button type="submit" className="btn btn-primary" id="login-btn" disabled={loading}>
+              {loading ? 'Signing In...' : 'Sign In'}
             </button>
 
             <div className="login-footer">

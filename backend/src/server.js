@@ -1,8 +1,14 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
 import userRoutes from './routes/userRoutes.js';
 import ticketRoutes from './routes/ticketRoutes.js';
+import authRoutes from "./routes/authRoutes.js";
+import testRoutes from "./routes/testRoutes.js"; 
 import { testSupabaseConnection } from './config/db.js';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const app = express();
 
@@ -12,7 +18,9 @@ app.use(express.json()); // to parse JSON bodies
 
 // Routes
 app.use('/api/users', userRoutes);
+app.use("/api/auth", authRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use("/api/test", testRoutes);
 
 // Test route
 app.get('/', (req, res) => {
