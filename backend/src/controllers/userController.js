@@ -6,18 +6,18 @@ export const createUser = async (req, res) => {
     try {
         const { full_name, email, password, user_type } = req.body;
 
-        // Validate input
+        //Validate input
         if (!full_name || !email || !password || !user_type) {
             return res.status(400).json({ success: false, message: 'Full name, email, password, and user type are required.' });
         }
 
-        // Map user_type from frontend to a valid role in the DB
-        const role = user_type === 'agent' ? 'technician' : 'normal_user';
+        //Map user_type from frontend to a valid role in the DB
+        const role = (user_type === 'agent' || user_type === 'technician') ? 'technician' : 'normal_user';
         if (user_type === 'admin') {
             return res.status(400).json({ success: false, message: 'Cannot create admin users through this endpoint.' });
         }
 
-        // Hash password
+        //Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -31,10 +31,10 @@ export const createUser = async (req, res) => {
                     role: role,
                 }
             ])
-            .select('*, role'); // return inserted row
+            .select('*, role'); //return inserted row
 
         if (error) {
-            if (error.code === '23505') { // Unique violation
+            if (error.code === '23505') { //Unique violation
                 return res.status(409).json({ success: false, message: 'User with this email already exists.' });
             }
             throw error;
@@ -90,9 +90,15 @@ export const getUserById = async (req, res) => {
 export const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { full_name, email, role } = req.body;
+        const { full_name, email, user_type, status } = req.body;
 
-        const { data, error } = await supabase.from('users').update({ full_name, email, role, updated_at: new Date() }).eq('_id', id).select('*, role');
+        const updateData = { updated_at: new Date() };
+        if (full_name) updateData.full_name = full_name;
+        if (email) updateData.email = email;
+        if (status) updateData.status = status;
+        if (user_type) updateData.role = user_type === 'agent' ? 'technician' : 'normal_user';
+
+        const { data, error } = await supabase.from('users').update(updateData).eq('_id', id).select('*, role');
 
         if (error) throw error;
         if (!data || data.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
@@ -109,9 +115,12 @@ export const updateUser = async (req, res) => {
 export const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { error } = await supabase.from('users').delete().eq('_id', id);
+        const { data, error } = await supabase.from('users').delete().eq('_id', id).select();
 
         if (error) throw error;
+        if (!data || data.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
 
         return res.json({ success: true, message: 'User deleted successfully' });
     } catch (err) {

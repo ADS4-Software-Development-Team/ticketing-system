@@ -1,6 +1,6 @@
 // Comment management logic
 import { supabase } from '../config/db.js';
-import { v4 as uuidv4 } from 'uuid';
+
 
 // Add a comment to a ticket
 export const addComment = async (req, res) => {
