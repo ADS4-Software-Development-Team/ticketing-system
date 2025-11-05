@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
-import axios from 'axios';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {
     const [activeSection, setActiveSection] = useState('dashboard');
@@ -14,7 +13,7 @@ const AdminDashboard = () => {
         full_name: '',
         email: '',
         password: '',
-        user_type: 'normal_user',
+        user_type: 'agent',
     });
     const [editingUser, setEditingUser] = useState(null);
     const [editFormData, setEditFormData] = useState({
@@ -26,56 +25,75 @@ const AdminDashboard = () => {
     const navigate = useNavigate();
 
     // Users State
-    const [users, setUsers] = useState([]);
+    const [users, setUsers] = useState([
+        { id: 1, full_name: 'John Doe', email: 'john@example.com', user_type: 'user', status: 'active' },
+        { id: 2, full_name: 'Sarah Wilson', email: 'sarah@example.com', user_type: 'agent', status: 'active' },
+        { id: 3, full_name: 'Mike Johnson', email: 'mike@example.com', user_type: 'user', status: 'inactive' },
+    ]);
 
-    // Tickets State
-    const [tickets, setTickets] = useState([]);
+    // Tickets State with categories and updatedAt
+    const [tickets, setTickets] = useState([
+        {
+            id: 1,
+            title: 'Login Issue',
+            assignedTo: 'Sarah Wilson',
+            status: 'Open',
+            priority: 'High',
+            createdBy: 'John Doe',
+            createdAt: '2025-10-28 10:15 AM',
+            category: 'Software',
+            updatedAt: '2025-10-28 10:15 AM'
+        },
+        {
+            id: 2,
+            title: 'Page not loading',
+            assignedTo: 'John Doe',
+            status: 'In Progress',
+            priority: 'Medium',
+            createdBy: 'Mike Johnson',
+            createdAt: '2025-10-28 11:30 AM',
+            category: 'Network',
+            updatedAt: '2025-10-28 02:45 PM'
+        },
+        {
+            id: 3,
+            title: 'Bug in checkout',
+            assignedTo: 'Mike Johnson',
+            status: 'Resolved',
+            priority: 'Low',
+            createdBy: 'Sarah Wilson',
+            createdAt: '2025-10-27 02:45 PM',
+            category: 'Software',
+            updatedAt: '2025-10-28 09:30 AM'
+        },
+        {
+            id: 4,
+            title: 'Password reset',
+            assignedTo: 'Sarah Wilson',
+            status: 'Open',
+            priority: 'High',
+            createdBy: 'John Doe',
+            createdAt: '2025-10-28 09:00 AM',
+            category: 'Software',
+            updatedAt: '2025-10-28 09:00 AM'
+        },
+        {
+            id: 5,
+            title: 'Printer not working',
+            assignedTo: 'Mike Johnson',
+            status: 'Open',
+            priority: 'Medium',
+            createdBy: 'John Doe',
+            createdAt: '2025-10-29 08:30 AM',
+            category: 'Hardware',
+            updatedAt: '2025-10-29 08:30 AM'
+        },
+    ]);
 
-    // Fetch data from backend on component mount
-    useEffect(() => {
-        const fetchData = async () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                alert('No token found, please log in.');
-                navigate('/');
-                return;
-            }
-
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            };
-
-            try {
-                // Fetch users
-                const usersResponse = await axios.get('http://localhost:3000/api/users', config);
-                if (usersResponse.data.success) {
-                    // Add a default status to users for frontend management
-                    const usersWithStatus = usersResponse.data.users.map(u => ({ ...u, status: 'active' }));
-                    setUsers(usersWithStatus);
-                }
-
-                // Fetch tickets
-                const ticketsResponse = await axios.get('http://localhost:3000/api/tickets', config);
-                if (ticketsResponse.data.success) {
-                    setTickets(ticketsResponse.data.tickets);
-                }
-
-            } catch (error) {
-                console.error('Failed to fetch data:', error);
-                alert('Failed to fetch data. You may be logged out.');
-                navigate('/');
-            }
-        };
-
-        fetchData();
-    }, [navigate]);
-
-    // Menu Items
+    // Menu Items with reduced spacing
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-        { id: 'users', label: 'User Management', icon: '👥' },     
+        { id: 'users', label: 'User Management', icon: '👥' },
         { id: 'agents', label: 'Agent Management', icon: '🛠️' },
         { id: 'tickets', label: 'All Tickets', icon: '🎫' },
         { id: 'reports', label: 'Analytics', icon: '📈' },
@@ -85,9 +103,16 @@ const AdminDashboard = () => {
     // Dashboard Stats
     const stats = [
         { label: 'Total Tickets', value: tickets.length, icon: '🎫', color: 'bg-blue-600' },
-        { label: 'Open Tickets', value: tickets.filter(t => t.status.toLowerCase() === 'open').length, icon: '🔓', color: 'bg-red-500' },
-        { label: 'Closed Tickets', value: tickets.filter(t => t.status.toLowerCase() === 'resolved').length, icon: '✅', color: 'bg-green-500' },
-        { label: 'Active Agents', value: users.filter(u => u.role === 'technician' && u.status === 'active').length, icon: '👨‍💼', color: 'bg-purple-500' },
+        { label: 'Open Tickets', value: tickets.filter(t => t.status === 'Open').length, icon: '🔓', color: 'bg-red-500' },
+        { label: 'Closed Tickets', value: tickets.filter(t => t.status === 'Resolved').length, icon: '✅', color: 'bg-green-500' },
+        { label: 'Active Agents', value: users.filter(u => u.user_type === 'agent' && u.status === 'active').length, icon: '👨‍💼', color: 'bg-purple-500' },
+    ];
+
+    // Category Stats
+    const categoryStats = [
+        { label: 'Software', value: tickets.filter(t => t.category === 'Software').length, color: 'bg-blue-500' },
+        { label: 'Network', value: tickets.filter(t => t.category === 'Network').length, color: 'bg-green-500' },
+        { label: 'Hardware', value: tickets.filter(t => t.category === 'Hardware').length, color: 'bg-orange-500' },
     ];
 
     // Recent Activity
@@ -100,17 +125,19 @@ const AdminDashboard = () => {
 
     // Quick Actions
     const quickActions = [
-        { label: 'Add User/Agent', icon: '➕', action: () => handleAddUserClick() },
-        { label: 'System Settings', icon: '⚙️', action: () => setActiveSection('settings') },
+        { label: 'Add Agent', icon: '➕', action: () => handleAddUserClick() },
         { label: 'User Management', icon: '👥', action: () => setActiveSection('users') },
     ];
 
-    // Pie chart data
-    const pieData = [
-        { name: 'Open Tickets', value: tickets.filter(t => t.status.toLowerCase() === 'open').length },
-        { name: 'Closed Tickets', value: tickets.filter(t => t.status.toLowerCase() === 'resolved').length },
-    ];
-    const COLORS = ['#FF4C4C', '#4CAF50'];
+    // Calculate total tickets and percentages
+    const totalTickets = tickets.length;
+    const openCount = tickets.filter(t => t.status === 'Open').length;
+    const closedCount = tickets.filter(t => t.status === 'Resolved').length;
+    const progressCount = tickets.filter(t => t.status === 'In Progress').length;
+
+    const openPercent = totalTickets > 0 ? ((openCount / totalTickets) * 100).toFixed(1) : '0.0';
+    const closedPercent = totalTickets > 0 ? ((closedCount / totalTickets) * 100).toFixed(1) : '0.0';
+    const progressPercent = totalTickets > 0 ? ((progressCount / totalTickets) * 100).toFixed(1) : '0.0';
 
     // Handlers
     const handleInputChange = e => {
@@ -120,62 +147,50 @@ const AdminDashboard = () => {
 
     const handleAddUserClick = () => {
         setShowAddUserForm(true);
-        setActiveSection('users');
+        setActiveSection('agents');
     };
 
     const handleLogout = () => {
         const confirmed = window.confirm('Are you sure you want to log out?');
         if (confirmed) {
-             navigate('/'); // ✅ Redirects to welcome page
+            navigate('/');
         }
     };
 
-    const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const token = localStorage.getItem('token');
-    const config = {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
+    const handleSubmit = e => {
+        e.preventDefault();
+        const newUser = {
+            id: users.length + 1,
+            full_name: formData.full_name,
+            email: formData.email,
+            user_type: 'agent',
+            status: 'active',
+        };
+        setUsers(prev => [...prev, newUser]);
+        setSuccessMessage('Support Agent created successfully!');
+        setShowSuccessMessage(true);
+        setFormData({ full_name: '', email: '', password: '', user_type: 'agent' });
+        setTimeout(() => {
+            setShowSuccessMessage(false);
+            setShowAddUserForm(false);
+        }, 5000);
     };
-
-    try {
-        const response = await axios.post('http://localhost:3000/api/users', formData, config);
-
-        if (response.data.success) {
-            // Add status to the new user for frontend state
-            const newUser = { ...response.data.user, status: 'active' };
-            setUsers(prev => [...prev, newUser]);
-            setSuccessMessage(`${formData.user_type === 'technician' ? 'Support Agent' : 'User'} created successfully!`);
-            setShowSuccessMessage(true);
-            setFormData({ full_name: '', email: '', password: '', user_type: 'normal_user' });
-            setTimeout(() => {
-                setShowSuccessMessage(false);
-                setShowAddUserForm(false);
-            }, 5000);
-        }
-    } catch (error) {
-        console.error('Error creating user:', error);
-        alert('Failed to create user. Please try again.');
-    }
-};
 
     const handleCancel = () => {
         setShowAddUserForm(false);
-        setFormData({ full_name: '', email: '', password: '', user_type: 'normal_user' });
+        setFormData({ full_name: '', email: '', password: '', user_type: 'agent' });
         setShowSuccessMessage(false);
     };
 
     const handleDeleteUser = userId => {
-        // This would be an API call in a real app:
-        // axios.delete(`/api/users/${userId}`, config).then(...)
-        alert('Delete functionality requires a backend endpoint.');
+        if (window.confirm('Are you sure you want to delete this user?')) {
+            setUsers(prev => prev.filter(u => u.id !== userId));
+        }
     };
 
     const handleToggleStatus = userId => {
         setUsers(prev =>
-            prev.map(u => (u._id === userId ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u))
+            prev.map(u => (u.id === userId ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u))
         );
     };
 
@@ -195,11 +210,9 @@ const AdminDashboard = () => {
     };
 
     const handleSaveEdit = () => {
-        // This would be an API call in a real app:
-        // axios.put(`/api/users/${editingUser._id}`, editFormData, config).then(...)
         setUsers((prev) =>
             prev.map((u) =>
-                u._id === editingUser._id ? { ...u, ...editFormData } : u
+                u.id === editingUser.id ? { ...u, ...editFormData } : u
             )
         );
         setEditingUser(null);
@@ -212,31 +225,46 @@ const AdminDashboard = () => {
         setEditFormData({ full_name: '', email: '', user_type: '', status: '' });
     };
 
+    const getUsersByType = type => users.filter(u => u.user_type === type);
 
-    const getUsersByType = type => users.filter(u => u.role === (type === 'agent' ? 'technician' : 'normal_user'));
+    // Custom label for pie chart with percentages
+    const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
+        const RADIAN = Math.PI / 180;
+        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+        return (
+            <text 
+                x={x} 
+                y={y} 
+                fill="white" 
+                textAnchor={x > cx ? 'start' : 'end'} 
+                dominantBaseline="central"
+                fontSize="12"
+                fontWeight="bold"
+            >
+                {`${(percent * 100).toFixed(1)}%`}
+            </text>
+        );
+    };
 
     // Render Content
     const renderContent = () => {
         if (showAddUserForm) {
             return (
                 <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-lg mx-auto">
-                    <h2 className="text-2xl font-semibold mb-2">Add New User/Agent</h2>
+                    <h2 className="text-2xl font-semibold mb-2">Add New Agent</h2>
                     {showSuccessMessage && (
                         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 flex items-start">
                             <span className="mr-2">✅</span>
                             <div>
                                 <h4 className="font-semibold">{successMessage}</h4>
-                                <p>The new account has been added successfully.</p>
+                                <p>The new agent account has been added successfully.</p>
                             </div>
                         </div>
                     )}
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block mb-1 font-medium">Account Type</label>
-                            <select name="user_type" value={formData.user_type} onChange={handleInputChange} className="w-full border rounded px-3 py-2" required>                                <option value="normal_user">User</option>
-                                <option value="technician">Support Agent</option>
-                            </select>
-                        </div>
                         <div>
                             <label className="block mb-1 font-medium">Full Name</label>
                             <input type="text" name="full_name" value={formData.full_name} onChange={handleInputChange} className="w-full border rounded px-3 py-2" required />
@@ -252,7 +280,7 @@ const AdminDashboard = () => {
                         <div className="flex justify-end space-x-2">
                             <button type="button" onClick={handleCancel} className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
                             <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                                Create {formData.user_type === 'technician' ? 'Agent' : 'User'}
+                                Create Agent
                             </button>
                         </div>
                     </form>
@@ -260,6 +288,7 @@ const AdminDashboard = () => {
             );
         }
 
+        // eslint-disable-next-line default-case
         switch (activeSection) {
             case 'dashboard':
                 return (
@@ -275,6 +304,22 @@ const AdminDashboard = () => {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+
+                        {/* Category Stats */}
+                        <div className="bg-white p-4 rounded shadow">
+                            <h3 className="font-semibold mb-3">Tickets by Category</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {categoryStats.map((stat, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-3 border rounded">
+                                        <div className="flex items-center">
+                                            <div className={`w-4 h-4 rounded-full ${stat.color} mr-3`}></div>
+                                            <span className="font-medium">{stat.label}</span>
+                                        </div>
+                                        <span className="text-lg font-semibold">{stat.value}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         {/* Recent Activity & Quick Actions */}
@@ -308,19 +353,72 @@ const AdminDashboard = () => {
                 );
 
             case 'reports':
+                const chartData = [
+                    { name: 'Open Tickets', value: openCount },
+                    { name: 'In Progress', value: progressCount },
+                    { name: 'Closed Tickets', value: closedCount },
+                ];
+
+                const COLORS = ['#f87171', '#facc15', '#4ade80'];
+
                 return (
                     <div className="bg-white p-6 rounded shadow text-gray-700">
-                        <h2 className="text-xl font-semibold mb-4">{menuItems.find(i => i.id === 'reports')?.label}</h2>
-                        <div className="flex justify-center items-center">
-                            <PieChart width={400} height={400}>
-                                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} label>
-                                    {pieData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend verticalAlign="bottom" height={36} />
-                            </PieChart>
+                        <h2 className="text-2xl font-semibold mb-6 flex items-center">
+                            📈 Ticket Analytics Overview
+                        </h2>
+
+                        {/* Chart Section */}
+                        <div className="flex flex-col md:flex-row justify-center items-center gap-8">
+                            <div className="w-full md:w-1/2">
+                                <ResponsiveContainer width="100%" height={400}>
+                                    <PieChart>
+                                        <Pie
+                                            data={chartData}
+                                            dataKey="value"
+                                            nameKey="name"
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={150}
+                                            label={renderCustomizedLabel}
+                                            labelLine={false}
+                                        >
+                                            {chartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip 
+                                            formatter={(value, name) => [`${value} tickets`, name]}
+                                        />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* Summary Details */}
+                            <div className="space-y-4 text-gray-800">
+                                <h3 className="text-lg font-semibold">Ticket Breakdown</h3>
+                                <div className="flex items-center space-x-3">
+                                    <span className="w-4 h-4 rounded-full bg-red-400"></span>
+                                    <p>Open Tickets: <strong>{openCount}</strong> ({openPercent}%)</p>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <span className="w-4 h-4 rounded-full bg-yellow-400"></span>
+                                    <p>In Progress: <strong>{progressCount}</strong> ({progressPercent}%)</p>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <span className="w-4 h-4 rounded-full bg-green-400"></span>
+                                    <p>Closed Tickets: <strong>{closedCount}</strong> ({closedPercent}%)</p>
+                                </div>
+
+                                <div className="pt-4 border-t border-gray-200">
+                                    <p className="text-gray-600">
+                                        Total Tickets: <strong>{totalTickets}</strong>
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        This overview provides insight into current support workload and performance efficiency.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 );
@@ -332,9 +430,11 @@ const AdminDashboard = () => {
                     <div className="bg-white p-4 rounded shadow">
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-xl font-semibold">{type === 'agent' ? 'Support Agents' : 'Users'}</h2>
-                            <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={handleAddUserClick}>
-                                ➕ Add {type === 'agent' ? 'Agent' : 'User'}
-                            </button>
+                            {type === 'agent' && (
+                                <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={handleAddUserClick}>
+                                    ➕ Add Agent
+                                </button>
+                            )}
                         </div>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
@@ -348,8 +448,8 @@ const AdminDashboard = () => {
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {getUsersByType(type).map(user => (
-                                        <tr key={user._id}>
-                                            {editingUser && editingUser._id === user._id ? (
+                                        <tr key={user.id}>
+                                            {editingUser && editingUser.id === user.id ? (
                                                 <>
                                                     <td className="px-4 py-2">
                                                         <input
@@ -431,7 +531,6 @@ const AdminDashboard = () => {
                                             )}
                                         </tr>
                                     ))}
-
                                 </tbody>
                             </table>
                             {getUsersByType(type).length === 0 && <p className="text-gray-500 mt-2">No {type === 'agent' ? 'support agents' : 'users'} found.</p>}
@@ -449,21 +548,32 @@ const AdminDashboard = () => {
                                     <tr className="bg-gray-50">
                                         <th className="px-4 py-2 text-left text-gray-700">ID</th>
                                         <th className="px-4 py-2 text-left text-gray-700">Title</th>
+                                        <th className="px-4 py-2 text-left text-gray-700">Category</th>
                                         <th className="px-4 py-2 text-left text-gray-700">Assigned To</th>
                                         <th className="px-4 py-2 text-left text-gray-700">Created By</th>
                                         <th className="px-4 py-2 text-left text-gray-700">Created At</th>
+                                        <th className="px-4 py-2 text-left text-gray-700">Updated At</th>
                                         <th className="px-4 py-2 text-left text-gray-700">Status</th>
                                         <th className="px-4 py-2 text-left text-gray-700">Priority</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {tickets.map(ticket => (
-                                        <tr key={ticket._id}>
-                                            <td className="px-4 py-2">{ticket._id}</td>
+                                        <tr key={ticket.id}>
+                                            <td className="px-4 py-2">{ticket.id}</td>
                                             <td className="px-4 py-2">{ticket.title}</td>
-                                            <td className="px-4 py-2">{ticket.agent?.full_name || 'Unassigned'}</td>
-                                            <td className="px-4 py-2">{ticket.user?.full_name}</td>
-                                            <td className="px-4 py-2">{new Date(ticket.created_at).toLocaleString()}</td>
+                                            <td className="px-4 py-2">
+                                                <span className={`px-2 py-1 rounded-full text-white text-sm ${ticket.category === 'Software' ? 'bg-blue-500' :
+                                                    ticket.category === 'Network' ? 'bg-green-500' :
+                                                        'bg-orange-500'
+                                                    }`}>
+                                                    {ticket.category}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-2">{ticket.assignedTo}</td>
+                                            <td className="px-4 py-2">{ticket.createdBy}</td>
+                                            <td className="px-4 py-2">{ticket.createdAt}</td>
+                                            <td className="px-4 py-2">{ticket.updatedAt}</td>
                                             <td className="px-4 py-2">
                                                 <span className={`px-2 py-1 rounded-full text-white text-sm ${ticket.status === 'Open' ? 'bg-red-500' : ticket.status === 'In Progress' ? 'bg-yellow-500' : 'bg-green-500'}`}>
                                                     {ticket.status}
@@ -477,17 +587,6 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 );
-
-            case 'settings':
-                return (
-                    <div className="bg-white p-6 rounded shadow text-gray-700">
-                        <h2 className="text-xl font-semibold mb-2">{menuItems.find(i => i.id === activeSection)?.label}</h2>
-                        <p className="text-gray-500">Content for this section will appear here.</p>
-                    </div>
-                );
-
-            default:
-                return <div className="text-gray-700">Select a section</div>;
         }
     };
 
@@ -496,9 +595,9 @@ const AdminDashboard = () => {
             {/* Fixed Header */}
             <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center bg-white shadow px-4 py-3">
                 <div className="flex items-center space-x-4">
-                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-2xl">☰</button>
+                   
                     <div>
-                        <h1 className="font-bold text-xl">TicketFlow</h1>
+                        <h1 className="font-bold text-xl">DekagoTicketFlow</h1>
                         <span className="text-gray-500 text-sm">Admin Panel</span>
                     </div>
                 </div>
@@ -511,17 +610,17 @@ const AdminDashboard = () => {
             </nav>
 
             {/* Main Content Area */}
-            <div className="flex flex-1 overflow-hidden mt-16"> {/* mt-16 to account for fixed header */}
-                {/* Sidebar */}
-                <aside className={`bg-gray-100 w-64 p-4 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                    <nav className="flex flex-col space-y-2">
+            <div className="flex flex-1 overflow-hidden mt-16">
+                {/* Sidebar with reduced spacing */}
+                <aside className={`bg-gray-100 w-64 pr-4 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                    <nav className="flex flex-col space-y-1"> {/* Reduced from space-y-2 to space-y-1 */}
                         {menuItems.map(item => (
                             <button
                                 key={item.id}
-                                className={`flex items-center px-3 py-2 rounded hover:bg-gray-200 ${activeSection === item.id ? 'bg-gray-300 font-semibold' : ''}`}
+                                className={`flex items-center px-3 py-2 rounded hover:bg-gray-200 ${activeSection === item.id ? 'bg-blue-300 font-semibold' : ''}`}
                                 onClick={() => {
                                     if (item.id === 'logout') {
-                                        handleLogout(); // ✅ Logout confirmation
+                                        handleLogout();
                                     } else {
                                         setActiveSection(item.id);
                                         setShowAddUserForm(false);
@@ -529,15 +628,15 @@ const AdminDashboard = () => {
                                     }
                                 }}
                             >
-                                <span className="mr-2">{item.icon}</span>
-                                {item.label}
+                                <span className="mr-2 text-lg">{item.icon}</span>
+                                <span className="text-sm">{item.label}</span>
                             </button>
                         ))}
                     </nav>
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 overflow-auto p-6 bg-gray-50 pb-16"> {/* pb-16 to account for fixed footer */}
+                <main className="flex-1 overflow-auto p-6 bg-gray-50 pb-16">
                     {renderContent()}
                 </main>
             </div>
