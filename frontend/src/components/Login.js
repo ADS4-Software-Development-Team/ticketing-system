@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios"; // Import the centralized API instance
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -28,7 +28,7 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/login', {
+      const response = await api.post('/auth/login', {
         email,
         password,
       });
@@ -78,7 +78,7 @@ const Login = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/register', {
+      const response = await api.post('/auth/register', {
         full_name: `${registrationData.name} ${registrationData.surname}`,
         email: registrationData.email,
         password: registrationData.password,

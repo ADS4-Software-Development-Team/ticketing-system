@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios'; // Import the centralized API instance
 
 const AgentDashboard = () => {
     const [selectedTicket, setSelectedTicket] = useState(null);
@@ -29,8 +29,8 @@ const AgentDashboard = () => {
 
         const fetchTickets = async () => {
             try {
-                const config = { headers: { Authorization: `Bearer ${token}` } };
-                const response = await axios.get('http://localhost:3000/api/tickets', config);
+                // The api instance automatically includes the token
+                const response = await api.get('/tickets');
                 if (response.data.success) {
                     const formattedTickets = response.data.tickets.map(ticket => ({
                         id: ticket._id,
@@ -63,13 +63,8 @@ const AgentDashboard = () => {
     };
 
     const handleStatusChange = async (ticketId, newStatus) => {
-        const token = localStorage.getItem('token');
         try {
-            const response = await axios.put(
-                `http://localhost:3000/api/tickets/${ticketId}`,
-                { status: newStatus },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await api.put(`/tickets/${ticketId}`, { status: newStatus });
 
             if (response.data.success) {
                 const updatedTicket = response.data.ticket;
