@@ -1,118 +1,98 @@
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
-function App() {
-  const [activeView, setActiveView] = useState('dashboard')
-  const [selectedTicket, setSelectedTicket] = useState(null)
-  const [showTicketModal, setShowTicketModal] = useState(false)
-  const [replyText, setReplyText] = useState('')
-  
-  // Current logged-in agent
-  const [currentAgent] = useState({
-    name: 'Jane Smith',
-    role: 'Support Agent',
-    avatar: 'JS'
-  })
+const AgentDashboard = () => {
+    const [selectedTicket, setSelectedTicket] = useState(null);
+    const [showTicketModal, setShowTicketModal] = useState(false);
+    const [replyText, setReplyText] = useState('');
+    const [currentAgent, setCurrentAgent] = useState(null);
+    const [tickets, setTickets] = useState([]);
+    const navigate = useNavigate();
 
-  const [tickets, setTickets] = useState([
-    {
-      id: 'IT-12345',
-      subject: 'Cannot connect to network printer',
-      requester: 'Alex Doe',
-      category: 'Hardware',
-      priority: 'High',
-      status: 'New',
-      assignedAgent: 'Unassigned',
-      createdAt: '2024-01-15',
-      updatedAt: '1 hour ago',
-      description: 'Hello, I am unable to connect to the network printer on the 3rd floor. My computer cannot find it, and I have a deadline to print important documents.',
-      attachments: ['printer_setup.pdf'],
-      conversation: [
-        { sender: 'Alex Doe', message: 'Hello, I am unable to connect to the network printer on the 3rd floor. My computer cannot find it, and I have a deadline to print important documents.', time: '2 days ago' }
-      ]
-    },
-    {
-      id: 'IT-12346',
-      subject: 'VPN connection issues',
-      requester: 'John Smith',
-      category: 'Networking',
-      priority: 'High',
-      status: 'In Progress',
-      assignedAgent: 'Jane Smith',
-      createdAt: '2024-01-16',
-      updatedAt: '5 minutes ago',
-      description: 'Unable to connect to company VPN from home office. Getting authentication error.',
-      attachments: ['vpn_error.png'],
-      conversation: [
-        { sender: 'John Smith', message: 'Unable to connect to company VPN from home office. Getting authentication error.', time: '1 day ago' },
-        { sender: 'Jane Smith (Agent)', message: 'Looking into your VPN configuration. Please check if your certificate is up to date.', time: '5 minutes ago' }
-      ]
-    },
-    {
-      id: 'IT-12347',
-      subject: 'Software installation request',
-      requester: 'Sarah Wilson',
-      category: 'Software',
-      priority: 'Medium',
-      status: 'Open',
-      assignedAgent: 'Mike Johnson',
-      createdAt: '2024-01-17',
-      updatedAt: '3 hours ago',
-      description: 'Need Adobe Creative Suite installed for marketing department projects.',
-      attachments: [],
-      conversation: [
-        { sender: 'Sarah Wilson', message: 'Need Adobe Creative Suite installed for marketing department projects.', time: '3 hours ago' }
-      ]
-    },
-    {
-      id: 'IT-12344',
-      subject: 'Email configuration',
-      requester: 'Mike Johnson',
-      category: 'Email',
-      priority: 'Low',
-      status: 'Resolved',
-      assignedAgent: 'Jane Smith',
-      createdAt: '2024-01-12',
-      updatedAt: '2 days ago',
-      description: 'Need help setting up email on new mobile device.',
-      attachments: [],
-      conversation: [
-        { sender: 'Mike Johnson', message: 'Need help setting up email on new mobile device.', time: '5 days ago' },
-        { sender: 'Jane Smith (Agent)', message: 'Email configuration completed successfully. You should now be able to access your emails.', time: '2 days ago' }
-      ]
-    }
-  ])
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const token = localStorage.getItem('token');
 
-  const handleTicketClick = (ticket) => {
-    // Update status to "Open" and assign current agent when agent clicks on a ticket
-    const updatedTickets = tickets.map(t => 
-      t.id === ticket.id ? { 
-        ...t, 
-        status: t.status === 'New' ? 'Open' : t.status,
-        assignedAgent: t.assignedAgent === 'Unassigned' ? currentAgent.name : t.assignedAgent
-      } : t
-    )
-    setTickets(updatedTickets)
-    
-    const updatedTicket = updatedTickets.find(t => t.id === ticket.id)
-    setSelectedTicket(updatedTicket)
-    setShowTicketModal(true)
-  }
+        if (!token || !user) {
+            alert('Authentication error. Please log in.');
+            navigate('/login');
+            return;
+        }
 
-  const handleStatusChange = (ticketId, newStatus) => {
-    const updatedTickets = tickets.map(ticket => 
-      ticket.id === ticketId ? { ...ticket, status: newStatus } : ticket
-    )
-    setTickets(updatedTickets)
-    if (selectedTicket && selectedTicket.id === ticketId) {
-      setSelectedTicket({ ...selectedTicket, status: newStatus })
-    }
-  }
+        setCurrentAgent({
+            id: user._id,
+            name: user.full_name,
+            role: 'Support Agent',
+            avatar: user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()
+        });
+
+        const fetchTickets = async () => {
+            try {
+                const config = { headers: { Authorization: `Bearer ${token}` } };
+                const response = await axios.get('http://localhost:3000/api/tickets', config);
+                if (response.data.success) {
+                    const formattedTickets = response.data.tickets.map(ticket => ({
+                        id: ticket._id,
+                        subject: ticket.title,
+                        requester: ticket.user?.full_name || 'N/A',
+                        category: ticket.category,
+                        priority: ticket.priority,
+                        status: ticket.status,
+                        assignedAgent: ticket.agent?.full_name || 'Unassigned',
+                        createdAt: ticket.created_at,
+                        updatedAt: ticket.updated_at,
+                        description: ticket.description,
+                        attachments: [], // Placeholder
+                        conversation: [], // Placeholder
+                    }));
+                    setTickets(formattedTickets);
+                }
+            } catch (error) {
+                console.error('Error fetching tickets:', error);
+                alert('Failed to fetch tickets.');
+            }
+        };
+
+        fetchTickets();
+    }, [navigate]);
+
+    const handleTicketClick = (ticket) => {
+        setSelectedTicket(ticket);
+        setShowTicketModal(true);
+    };
+
+    const handleStatusChange = async (ticketId, newStatus) => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await axios.put(
+                `http://localhost:3000/api/tickets/${ticketId}`,
+                { status: newStatus },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data.success) {
+                const updatedTicket = response.data.ticket;
+                const newTickets = tickets.map(t =>
+                    t.id === ticketId ? { ...t, status: updatedTicket.status, updatedAt: updatedTicket.updated_at } : t
+                );
+                setTickets(newTickets);
+                if (selectedTicket && selectedTicket.id === ticketId) {
+                    setSelectedTicket({ ...selectedTicket, status: newStatus });
+                }
+                alert('Ticket status updated!');
+            }
+        } catch (error) {
+            console.error('Error updating ticket status:', error);
+            alert('Failed to update ticket status.');
+        }
+    };
 
   const handleReplySubmit = () => {
     if (!replyText.trim() || !selectedTicket) return
 
     const newMessage = {
-      sender: `${currentAgent.name} (Agent)`,
+      sender: `${currentAgent?.name} (Agent)`,
       message: replyText,
       time: 'Just now'
     }
@@ -145,12 +125,16 @@ function App() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
+  if (!currentAgent) {
+    return <div className="container">Loading agent dashboard...</div>;
+  }
+
   return (
     <div className="container">
       <div className="sidebar">
         {/* Agent Profile Section at the Top */}
         <div className="agent-header">
-          <div className="agent-avatar-large">{currentAgent.avatar}</div>
+          <div className="agent-avatar-large">{currentAgent?.avatar}</div>
           <div className="agent-info">
             <div className="agent-name">{currentAgent.name}</div>
             <div className="agent-role">{currentAgent.role}</div>
@@ -161,7 +145,7 @@ function App() {
           <a href="#" className="nav-item active">
             <i className="fas fa-tachometer-alt"></i> Dashboard
           </a>
-          <a href="/login" className="nav-item">
+          <a href="/login" className="nav-item" onClick={() => localStorage.clear()}>
             <i className="fas fa-sign-out-alt"></i> Logout
           </a>
         </div>
@@ -362,4 +346,4 @@ function App() {
   )
 }
 
-export default App
+export default AgentDashboard;

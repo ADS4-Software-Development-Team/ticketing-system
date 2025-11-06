@@ -1,38 +1,71 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const CreateTicket = () => {
   const [subject, setSubject] = useState('');
+  const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
-  const [urgency, setUrgency] = useState('Medium');
+  const [priority, setPriority] = useState('Medium');
   const [attachments, setAttachments] = useState([]);
+  const [userName, setUserName] = useState('Office Personnel');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.full_name) {
+      setUserName(user.full_name);
+    }
+  }, []);
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
     setAttachments([...attachments, ...files]);
   };
 
-  const handleRemoveAttachment = (index) => {
-    const newAttachments = [...attachments];
-    newAttachments.splice(index, 1);
-    setAttachments(newAttachments);
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Form submission logic would go here
-    console.log({
-      subject,
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('You must be logged in to create a ticket.');
+      navigate('/login');
+      return;
+    }
+
+    // Basic validation
+    if (!subject || !category || !description) {
+      alert('Please fill out all required fields.');
+      return;
+    }
+
+    const ticketData = {
+      title: subject,
       description,
-      urgency,
-      attachments
-    });
+      category,
+      priority,
+    };
+
+    try {
+      const config = {
+        headers: { Authorization: `Bearer ${token}` },
+      };
+      const response = await axios.post('http://localhost:3000/api/tickets', ticketData, config);
+
+      if (response.data.success) {
+        alert('Ticket created successfully!');
+        navigate('/my-tickets');
+      }
+    } catch (error) {
+      console.error('Failed to create ticket:', error.response?.data?.message || error.message);
+      alert(`Error: ${error.response?.data?.message || 'Could not create ticket.'}`);
+    }
   };
 
   return (
     < div class="container">
         <div class="sidebar">
-            <div class="logo">Office Personel</div>
+            <div class="logo">{userName}</div>
             <div class="nav-menu">
                 <Link to="/user-dash" class="nav-item " data-page="dashboard">Dashboard</Link>
                 <Link to="/my-tickets" class="nav-item" data-page="my-tickets">My Tickets</Link>
@@ -49,42 +82,61 @@ const CreateTicket = () => {
                  
        <p ><i class="text-align-center">Please provide as much detail as possible so we can resolve your issue quickly.</i></p>
                 <div class="form-container">
+                  <form onSubmit={handleSubmit}>
                     <div class="form-group">
-                        <label class="form-label" for="subject">Category</label>
+                        <label class="form-label" htmlFor="subject">Subject</label>
                         <input
                           type="text"
-                      id="subject"
-                      className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
-                      placeholder="e.g., Software, Hardware or Network"
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                      required
-            />
+                          id="subject"
+                          className="form-control"
+                          placeholder="e.g., Cannot connect to VPN"
+                          value={subject}
+                          onChange={(e) => setSubject(e.target.value)}
+                          required
+                        />
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="description">Describe the Issue</label>
-                        <textarea id="description" class="form-control" rows="5" placeholder="Please provide a detailed description of the problem you are experiencing. Include any error messages and steps to reproduce."></textarea>
+                        <label class="form-label" htmlFor="category">Category</label>
+                        <select 
+                          id="category" 
+                          className="form-control"
+                          value={category}
+                          onChange={(e) => setCategory(e.target.value)}
+                          required
+                        >
+                          <option value="">Select a category</option>
+                          <option value="Hardware">Hardware</option>
+                          <option value="Software">Software</option>
+                          <option value="Network">Network</option>
+                          <option value="Other">Other</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Urgency</label>
+                        <label class="form-label" htmlFor="description">Describe the Issue</label>
+                        <textarea id="description" className="form-control" rows="5" placeholder="Please provide a detailed description of the problem you are experiencing. Include any error messages and steps to reproduce." value={description} onChange={(e) => setDescription(e.target.value)} required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
                         <div class="urgency-options">
-                            <div class="urgency-option" data-value="low">
+                            <div className={`urgency-option ${priority === 'Low' ? 'selected' : ''}`} onClick={() => setPriority('Low')}>
                                 <h3>Low</h3>
                                 <p>Minor issue, no immediate impact</p>
                             </div>
-                            <div class="urgency-option selected" data-value="medium">
+                            <div className={`urgency-option ${priority === 'Medium' ? 'selected' : ''}`} onClick={() => setPriority('Medium')}>
                                 <h3>Medium</h3>
                                 <p>Moderate impact on work</p>
                             </div>
-                            <div class="urgency-option" data-value="high">
+                            <div className={`urgency-option ${priority === 'High' ? 'selected' : ''}`} onClick={() => setPriority('High')}>
                                 <h3>High</h3>
                                 <p>Critical issue, work is blocked</p>
                             </div>
                         </div>
                     </div>
 
+                    {/* File upload is not fully implemented in this step */}
                     <div class="form-group">
                         <label class="form-label">Attachments</label>
                         <div class="file-upload">
@@ -93,9 +145,10 @@ const CreateTicket = () => {
                     </div>
 
                     <div class="form-actions">
-                        <button class="btn btn-outline">Cancel</button>
-                        <button class="btn btn-primary">Submit Ticket</button>
+                        <button type="button" className="btn btn-outline" onClick={() => navigate('/user-dash')}>Cancel</button>
+                        <button type="submit" className="btn btn-primary">Submit Ticket</button>
                     </div>
+                  </form>
                 </div>
             </div>
     </div>

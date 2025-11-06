@@ -1,5 +1,5 @@
 import { supabase } from "../config/db.js";
-import { v4 as uuidv4 } from 'uuid';
+
 
 export const createTicket = async (req, res) => {
   try {
@@ -41,7 +41,7 @@ export const getTickets = async (req, res) => {
     // We can add filtering/sorting/pagination later
     const { data, error } = await supabase.from('tickets').select(`
       *,
-      user:users ( full_name, email ),
+      user:users!tickets_user_id_fkey ( full_name, email ),
       agent:users!tickets_assigned_to_fkey ( full_name, email )
     `);
 
@@ -60,7 +60,7 @@ export const getTicketById = async (req, res) => {
     const { id } = req.params;
     const { data, error } = await supabase.from('tickets').select(`
       *,
-      user:users ( full_name, email ),
+      user:users!tickets_user_id_fkey ( full_name, email ),
       agent:users!tickets_assigned_to_fkey ( full_name, email )
     `).eq('_id', id).single();
 

@@ -2,7 +2,6 @@
 import { supabase } from '../config/db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { v4 as uuidv4 } from 'uuid';
 
 // Register a new user
 export const register = async (req, res) => {
@@ -66,6 +65,10 @@ export const login = async (req, res) => {
 
         if (error || !user) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        if (user.status === 'inactive') {
+            return res.status(403).json({ success: false, message: 'Your account has been deactivated. Please contact an administrator.' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);

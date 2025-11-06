@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import axios from 'axios';
 
 const AdminDashboard = () => {
     const [activeSection, setActiveSection] = useState('dashboard');
@@ -10,10 +11,10 @@ const AdminDashboard = () => {
     const [showSuccessMessage, setShowSuccessMessage] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [formData, setFormData] = useState({
-        full_name: '',
-        email: '',
-        password: '',
-        user_type: 'agent',
+      full_name: "",
+      email: "",
+      password: "",
+      user_type: "technician",
     });
     const [editingUser, setEditingUser] = useState(null);
     const [editFormData, setEditFormData] = useState({
@@ -25,70 +26,11 @@ const AdminDashboard = () => {
     const navigate = useNavigate();
 
     // Users State
-    const [users, setUsers] = useState([
-        { id: 1, full_name: 'John Doe', email: 'john@example.com', user_type: 'user', status: 'active' },
-        { id: 2, full_name: 'Sarah Wilson', email: 'sarah@example.com', user_type: 'agent', status: 'active' },
-        { id: 3, full_name: 'Mike Johnson', email: 'mike@example.com', user_type: 'user', status: 'inactive' },
-    ]);
+    const [users, setUsers] = useState([]);
+    const [recentActivities, setRecentActivities] = useState([]);
 
     // Tickets State with categories and updatedAt
-    const [tickets, setTickets] = useState([
-        {
-            id: 1,
-            title: 'Login Issue',
-            assignedTo: 'Sarah Wilson',
-            status: 'Open',
-            priority: 'High',
-            createdBy: 'John Doe',
-            createdAt: '2025-10-28 10:15 AM',
-            category: 'Software',
-            updatedAt: '2025-10-28 10:15 AM'
-        },
-        {
-            id: 2,
-            title: 'Page not loading',
-            assignedTo: 'John Doe',
-            status: 'In Progress',
-            priority: 'Medium',
-            createdBy: 'Mike Johnson',
-            createdAt: '2025-10-28 11:30 AM',
-            category: 'Network',
-            updatedAt: '2025-10-28 02:45 PM'
-        },
-        {
-            id: 3,
-            title: 'Bug in checkout',
-            assignedTo: 'Mike Johnson',
-            status: 'Resolved',
-            priority: 'Low',
-            createdBy: 'Sarah Wilson',
-            createdAt: '2025-10-27 02:45 PM',
-            category: 'Software',
-            updatedAt: '2025-10-28 09:30 AM'
-        },
-        {
-            id: 4,
-            title: 'Password reset',
-            assignedTo: 'Sarah Wilson',
-            status: 'Open',
-            priority: 'High',
-            createdBy: 'John Doe',
-            createdAt: '2025-10-28 09:00 AM',
-            category: 'Software',
-            updatedAt: '2025-10-28 09:00 AM'
-        },
-        {
-            id: 5,
-            title: 'Printer not working',
-            assignedTo: 'Mike Johnson',
-            status: 'Open',
-            priority: 'Medium',
-            createdBy: 'John Doe',
-            createdAt: '2025-10-29 08:30 AM',
-            category: 'Hardware',
-            updatedAt: '2025-10-29 08:30 AM'
-        },
-    ]);
+    const [tickets, setTickets] = useState([]);
 
     // Menu Items with reduced spacing
     const menuItems = [
@@ -102,7 +44,7 @@ const AdminDashboard = () => {
 
     // Dashboard Stats
     const stats = [
-        { label: 'Total Tickets', value: tickets.length, icon: '🎫', color: 'bg-blue-600' },
+        { label: 'Total Tickets', value: tickets.length, icon: '🎫', color: 'bg-blue-600' }, // This will now be dynamic
         { label: 'Open Tickets', value: tickets.filter(t => t.status === 'Open').length, icon: '🔓', color: 'bg-red-500' },
         { label: 'Closed Tickets', value: tickets.filter(t => t.status === 'Resolved').length, icon: '✅', color: 'bg-green-500' },
         { label: 'Active Agents', value: users.filter(u => u.user_type === 'agent' && u.status === 'active').length, icon: '👨‍💼', color: 'bg-purple-500' },
@@ -115,19 +57,98 @@ const AdminDashboard = () => {
         { label: 'Hardware', value: tickets.filter(t => t.category === 'Hardware').length, color: 'bg-orange-500' },
     ];
 
-    // Recent Activity
-    const recentActivities = [
-        { action: 'New ticket assigned', user: 'John Doe', time: '2 mins ago' },
-        { action: 'Ticket resolved', user: 'Sarah Wilson', time: '15 mins ago' },
-        { action: 'New agent added', user: 'System', time: '1 hour ago' },
-        { action: 'Priority changed', user: 'Mike Johnson', time: '2 hours ago' },
-    ];
-
     // Quick Actions
     const quickActions = [
         { label: 'Add Agent', icon: '➕', action: () => handleAddUserClick() },
         { label: 'User Management', icon: '👥', action: () => setActiveSection('users') },
     ];
+
+    // Fetch users from the database on component mount
+    useEffect(() => {
+        const fetchData = async () => {
+            const token = localStorage.getItem('token'); // Centralize token retrieval
+            if (!token) {
+                alert('Authentication error. Please log in again.');
+                navigate('/');
+                return;
+            }
+
+            try {
+                const config = {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                };
+
+                // Use Promise.all to fetch users and tickets concurrently
+                const [usersResponse, ticketsResponse] = await Promise.all([
+                    axios.get('http://localhost:3000/api/users', config),
+                    axios.get('http://localhost:3000/api/tickets', config)
+                ]);
+
+                if (usersResponse.data.success) {
+                    // Map backend data to frontend format
+                    const formattedUsers = usersResponse.data.users.map(user => ({
+                        id: user._id,
+                        full_name: user.full_name,
+                        email: user.email,
+                        user_type: user.role === 'technician' ? 'agent' : 'user', // Map role to user_type
+                        status: user.status || 'active', // Default to 'active' if status is null
+                        created_at: user.created_at
+                    }));
+                    setUsers(formattedUsers);
+                }
+
+                if (ticketsResponse.data.success) {
+                    setTickets(ticketsResponse.data.tickets);
+                }
+            } catch (error) {
+                console.error('Error fetching users:', error.response?.data?.message || error.message);
+            }
+        };
+        fetchData();
+    }, [navigate]);
+
+    // Effect to generate recent activities from tickets and users
+    useEffect(() => {
+        const ticketActivities = tickets.map(ticket => ({
+            type: 'Ticket',
+            action: `New ticket created: #${ticket._id}`,
+            user: ticket.user?.full_name || 'Unknown',
+            time: new Date(ticket.created_at),
+        }));
+
+        const userActivities = users.map(user => ({
+            type: 'User',
+            action: `New ${user.user_type} added`,
+            user: user.full_name,
+            time: new Date(user.created_at),
+        }));
+
+        const allActivities = [...ticketActivities, ...userActivities]
+            .sort((a, b) => b.time - a.time) // Sort by most recent
+            .slice(0, 5); // Get top 5 recent activities
+
+        setRecentActivities(allActivities);
+    }, [tickets, users]);
+
+    // Helper to format time for recent activities
+    const formatTimeAgo = (date) => {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        let interval = seconds / 31536000;
+        if (interval > 1) return `${Math.floor(interval)} years ago`;
+        
+        interval = seconds / 2592000;
+        if (interval > 1) return `${Math.floor(interval)} months ago`;
+        
+        interval = seconds / 86400;
+        if (interval > 1) return `${Math.floor(interval)} days ago`;
+        
+        interval = seconds / 3600;
+        if (interval > 1) return `${Math.floor(interval)} hours ago`;
+        
+        return `${Math.floor(seconds / 60)} minutes ago`;
+    };
 
     // Calculate total tickets and percentages
     const totalTickets = tickets.length;
@@ -157,41 +178,89 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleSubmit = e => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const newUser = {
-            id: users.length + 1,
-            full_name: formData.full_name,
-            email: formData.email,
-            user_type: 'agent',
-            status: 'active',
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Authentication error. Please log in again.');
+            navigate('/');
+            return;
+        }
+
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
         };
-        setUsers(prev => [...prev, newUser]);
-        setSuccessMessage('Support Agent created successfully!');
-        setShowSuccessMessage(true);
-        setFormData({ full_name: '', email: '', password: '', user_type: 'agent' });
-        setTimeout(() => {
-            setShowSuccessMessage(false);
-            setShowAddUserForm(false);
-        }, 5000);
+
+        try {
+            const response = await axios.post('http://localhost:3000/api/users', formData, config);
+            if (response.data.success) {
+                const newUser = { ...response.data.user, status: 'active' };
+                setUsers((prev) => [...prev, newUser]);
+                setSuccessMessage('Support Agent created successfully!');
+                setShowSuccessMessage(true);
+                setFormData({ full_name: '', email: '', password: '', user_type: 'technician' });
+                setTimeout(() => {
+                    setShowSuccessMessage(false);
+                    setShowAddUserForm(false);
+                }, 5000);
+            }
+        } catch (error) {
+            console.error('Error creating agent:', error.response?.data?.message || error.message);
+            alert(`Failed to create agent: ${error.response?.data?.message || 'Please try again.'}`);
+        }
     };
 
     const handleCancel = () => {
         setShowAddUserForm(false);
-        setFormData({ full_name: '', email: '', password: '', user_type: 'agent' });
+        setFormData({ full_name: '', email: '', password: '', user_type: 'technician' });
         setShowSuccessMessage(false);
     };
 
-    const handleDeleteUser = userId => {
-        if (window.confirm('Are you sure you want to delete this user?')) {
-            setUsers(prev => prev.filter(u => u.id !== userId));
+    const handleToggleStatus = async (userId, currentStatus) => {
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await axios.put(
+                `http://localhost:3000/api/users/${userId}`,
+                { status: newStatus },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data.success) {
+                setUsers(prev =>
+                    prev.map(u => (u.id === userId ? { ...u, status: newStatus } : u))
+                );
+                alert(`User has been ${newStatus === 'active' ? 'activated' : 'deactivated'}.`);
+            }
+        } catch (error) {
+            console.error('Error updating user status:', error.response?.data?.message || error.message);
+            alert(`Failed to update status: ${error.response?.data?.message || 'Please try again.'}`);
         }
     };
 
-    const handleToggleStatus = userId => {
-        setUsers(prev =>
-            prev.map(u => (u.id === userId ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u))
-        );
+    const handleDeleteUser = async (userId) => {
+        if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+            const token = localStorage.getItem('token');
+            try {
+                await axios.delete(`http://localhost:3000/api/users/${userId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setUsers(prev => prev.filter(u => u.id !== userId));
+                alert('User deleted successfully!');
+            } catch (error) {
+                console.error('Error deleting user:', error.response?.data || error.message);
+                if (error.response?.data?.code === '23503') {
+                    alert('Failed to delete user: This user is associated with existing tickets. Please reassign or resolve their tickets before deleting. Alternatively, you can deactivate the user.');
+                } else {
+                    const errorMessage = error.response?.data?.message || 'An unexpected error occurred.';
+                    alert(`Failed to delete user: ${errorMessage}`);
+                }
+            }
+        }
     };
 
     const handleEditClick = (user) => {
@@ -209,15 +278,34 @@ const AdminDashboard = () => {
         setEditFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleSaveEdit = () => {
-        setUsers((prev) =>
-            prev.map((u) =>
-                u.id === editingUser.id ? { ...u, ...editFormData } : u
-            )
-        );
-        setEditingUser(null);
-        setEditFormData({ full_name: '', email: '', user_type: '', status: '' });
-        alert('User information updated successfully!');
+    const handleSaveEdit = async () => {
+        const token = localStorage.getItem('token');
+        const { id } = editingUser;
+        // Ensure user_type is mapped back to the correct backend role
+        const payload = {
+            ...editFormData,
+            role: editFormData.user_type === 'agent' ? 'technician' : 'normal_user'
+        };
+        delete payload.user_type; // Remove frontend-specific key
+
+        try {
+            const response = await axios.put(
+                `http://localhost:3000/api/users/${id}`,
+                payload,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data.success) {
+                setUsers((prev) =>
+                    prev.map((u) => (u.id === id ? { ...u, ...editFormData } : u))
+                );
+                setEditingUser(null);
+                alert('User information updated successfully!');
+            }
+        } catch (error) {
+            console.error('Error updating user:', error.response?.data?.message || error.message);
+            alert(`Failed to update user: ${error.response?.data?.message || 'Please try again.'}`);
+        }
     };
 
     const handleCancelEdit = () => {
@@ -225,7 +313,13 @@ const AdminDashboard = () => {
         setEditFormData({ full_name: '', email: '', user_type: '', status: '' });
     };
 
-    const getUsersByType = type => users.filter(u => u.user_type === type);
+    const getUsersByType = type => {
+        if (type === 'agent') {
+            return users.filter(u => u.user_type === 'agent');
+        }
+        // 'users' section should show 'normal_user'
+        return users.filter(u => u.user_type === 'user');
+    };
 
     // Custom label for pie chart with percentages
     const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
@@ -332,7 +426,7 @@ const AdminDashboard = () => {
                                             <div className="w-2 h-2 mt-2 rounded-full bg-blue-600"></div>
                                             <div>
                                                 <p className="text-gray-700"><strong>{act.action}</strong> by {act.user}</p>
-                                                <small className="text-gray-400">{act.time}</small>
+                                                <small className="text-gray-400">{formatTimeAgo(act.time)}</small>
                                             </div>
                                         </div>
                                     ))}
@@ -425,12 +519,12 @@ const AdminDashboard = () => {
 
             case 'users':
             case 'agents':
-                const type = activeSection === 'agents' ? 'agent' : 'user';
+                const userRoleType = activeSection === 'agents' ? 'agent' : 'user';
                 return (
                     <div className="bg-white p-4 rounded shadow">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-semibold">{type === 'agent' ? 'Support Agents' : 'Users'}</h2>
-                            {type === 'agent' && (
+                            <h2 className="text-xl font-semibold">{userRoleType === 'agent' ? 'Support Agents' : 'Users'}</h2>
+                            {userRoleType === 'agent' && (
                                 <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={handleAddUserClick}>
                                     ➕ Add Agent
                                 </button>
@@ -447,7 +541,7 @@ const AdminDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {getUsersByType(type).map(user => (
+                                    {getUsersByType(userRoleType).map(user => (
                                         <tr key={user.id}>
                                             {editingUser && editingUser.id === user.id ? (
                                                 <>
@@ -515,7 +609,7 @@ const AdminDashboard = () => {
                                                             Edit
                                                         </button>
                                                         <button
-                                                            onClick={() => handleToggleStatus(user.id)}
+                                                            onClick={() => handleToggleStatus(user.id, user.status)}
                                                             className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600"
                                                         >
                                                             {user.status === 'active' ? 'Deactivate' : 'Activate'}
@@ -533,7 +627,7 @@ const AdminDashboard = () => {
                                     ))}
                                 </tbody>
                             </table>
-                            {getUsersByType(type).length === 0 && <p className="text-gray-500 mt-2">No {type === 'agent' ? 'support agents' : 'users'} found.</p>}
+                            {getUsersByType(userRoleType).length === 0 && <p className="text-gray-500 mt-2">No {userRoleType === 'agent' ? 'support agents' : 'users'} found.</p>}
                         </div>
                     </div>
                 );
@@ -549,7 +643,6 @@ const AdminDashboard = () => {
                                         <th className="px-4 py-2 text-left text-gray-700">ID</th>
                                         <th className="px-4 py-2 text-left text-gray-700">Title</th>
                                         <th className="px-4 py-2 text-left text-gray-700">Category</th>
-                                        <th className="px-4 py-2 text-left text-gray-700">Assigned To</th>
                                         <th className="px-4 py-2 text-left text-gray-700">Created By</th>
                                         <th className="px-4 py-2 text-left text-gray-700">Created At</th>
                                         <th className="px-4 py-2 text-left text-gray-700">Updated At</th>
@@ -563,17 +656,15 @@ const AdminDashboard = () => {
                                             <td className="px-4 py-2">{ticket.id}</td>
                                             <td className="px-4 py-2">{ticket.title}</td>
                                             <td className="px-4 py-2">
-                                                <span className={`px-2 py-1 rounded-full text-white text-sm ${ticket.category === 'Software' ? 'bg-blue-500' :
-                                                    ticket.category === 'Network' ? 'bg-green-500' :
-                                                        'bg-orange-500'
-                                                    }`}>
+                                                <span className={`px-2 py-1 rounded-full text-white text-sm ${ticket.category === 'Software' ? 'bg-blue-500' : 
+                                                    ticket.category === 'Network' ? 'bg-green-500' : 
+                                                    'bg-orange-500'}`}>
                                                     {ticket.category}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-2">{ticket.assignedTo}</td>
-                                            <td className="px-4 py-2">{ticket.createdBy}</td>
-                                            <td className="px-4 py-2">{ticket.createdAt}</td>
-                                            <td className="px-4 py-2">{ticket.updatedAt}</td>
+                                            <td className="px-4 py-2">{ticket.user?.full_name || 'N/A'}</td>
+                                            <td className="px-4 py-2">{new Date(ticket.created_at).toLocaleString()}</td>
+                                            <td className="px-4 py-2">{new Date(ticket.updated_at).toLocaleString()}</td>
                                             <td className="px-4 py-2">
                                                 <span className={`px-2 py-1 rounded-full text-white text-sm ${ticket.status === 'Open' ? 'bg-red-500' : ticket.status === 'In Progress' ? 'bg-yellow-500' : 'bg-green-500'}`}>
                                                     {ticket.status}

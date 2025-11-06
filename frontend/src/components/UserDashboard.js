@@ -1,7 +1,51 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Dashboard = () => {
+  const [tickets, setTickets] = useState([]);
+  const [stats, setStats] = useState({
+    new: 0,
+    open: 0,
+    inProgress: 0,
+    resolved: 0,
+  });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchTickets = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('You must be logged in to view this page.');
+        navigate('/login');
+        return;
+      }
+
+      try {
+        const config = {
+          headers: { Authorization: `Bearer ${token}` },
+        };
+        // Assuming the backend returns tickets for the logged-in user
+        const response = await axios.get('http://localhost:3000/api/tickets', config);
+        if (response.data.success) {
+          const userTickets = response.data.tickets;
+          setTickets(userTickets);
+
+          // Calculate stats
+          setStats({
+            new: userTickets.filter(t => t.status === 'New').length,
+            open: userTickets.filter(t => t.status === 'Open').length,
+            inProgress: userTickets.filter(t => t.status === 'In Progress').length,
+            resolved: userTickets.filter(t => t.status === 'Resolved').length,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch tickets:', error);
+      }
+    };
+
+    fetchTickets();
+  }, [navigate]);
 
   return (
      <div class="container">
@@ -25,24 +69,20 @@ const Dashboard = () => {
 
                 <div class="stats-container">
                     <div class="stat-card">
-                        <div class="stat-label">New Tickets</div>
-                        <div class="stat-value">12</div>
-                        <div class="stat-change positive">+3% from yesterday</div>
+                        <div class="stat-label">New</div>
+                        <div class="stat-value">{stats.new}</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Open</div>
-                        <div class="stat-value">45</div>
-                        <div class="stat-change negative">-1% from yesterday</div>
+                        <div class="stat-value">{stats.open}</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Pending</div>
-                        <div class="stat-value">8</div>
-                        <div class="stat-change negative">-5% from yesterday</div>
+                        <div class="stat-label">In Progress</div>
+                        <div class="stat-value">{stats.inProgress}</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Resolved Today</div>
-                        <div class="stat-value">21</div>
-                        <div class="stat-change positive">+10% from yesterday</div>
+                        <div class="stat-label">Resolved</div>
+                        <div class="stat-value">{stats.resolved}</div>
                     </div>
                 </div>
 
@@ -70,62 +110,22 @@ const Dashboard = () => {
                         <span>PRIORITY</span>
                         <span>LAST UPDATED</span>
                     </div>
-                    <div class="ticket-item">
-                        <span class="ticket-id">#89234</span>
-                        <span>Cannot connect to VPN</span>
-                        
-                        <span class="ticket-assignee">
-                            
-                            Bob Williams
-                        </span>
-                        <span><span class="ticket-status status-in-progress">In Progress</span></span>
-                        <span class="priority-high">High</span>
-                        <span>2 mins ago</span>
-                    </div>
-                    <div class="ticket-item">
-                        <span class="ticket-id">#89233</span>
-                        <span>Printer not working on 2nd floor</span>
-                        
-                        <span class="ticket-assignee">
-                            
-                            David Garcia
-                        </span>
-                        <span><span class="ticket-status status-open">Open</span></span>
-                        <span class="priority-medium">Medium</span>
-                        <span>15 mins ago</span>
-                    </div>
-                    <div class="ticket-item">
-                        <span class="ticket-id">#89232</span>
-                        <span>Software license renewal request</span>
-                       
-                        <span class="ticket-assignee">
-                            
-                            Carol Miller
-                        </span>
-                        <span><span class="ticket-status status-resolved">Resolved</span></span>
-                        <span class="priority-low">Low</span>
-                        <span>1 hour ago</span>
-                    </div>
-                    <div class="ticket-item">
-                        <span class="ticket-id">#89231</span>
-                        <span>Access denied to shared drive</span>
-                        <span class="ticket-assignee">
-                            Bob Williams
-                        </span>
-                        <span><span class="ticket-status status-open">Open</span></span>
-                        <span class="priority-medium">Medium</span>
-                        <span>3 hours ago</span>
-                    </div>
-                    <div class="ticket-item">
-                        <span class="ticket-id">#89230</span>
-                        <span>Forgot my password again</span>
-                        <span class="ticket-assignee">
-                            Unassigned
-                        </span>
-                        <span><span class="ticket-status status-open">Open</span></span>
-                        <span class="priority-low">Low</span>
-                        <span>5 hours ago</span>
-                    </div>
+                    {tickets.slice(0, 5).map(ticket => (
+                        <div class="ticket-item" key={ticket._id}>
+                            <span class="ticket-id">#{String(ticket._id).slice(-6)}</span>
+                            <span>{ticket.title}</span>
+                            <span class="ticket-assignee">
+                                {ticket.agent?.full_name || 'Unassigned'}
+                            </span>
+                            <span>
+                                <span className={`ticket-status status-${ticket.status.toLowerCase().replace(' ', '-')}`}>
+                                    {ticket.status}
+                                </span>
+                            </span>
+                            <span className={`priority-${ticket.priority.toLowerCase()}`}>{ticket.priority}</span>
+                            <span>{new Date(ticket.updated_at).toLocaleString()}</span>
+                        </div>
+                    ))}
                 </div>
         </div>
     </div> 
