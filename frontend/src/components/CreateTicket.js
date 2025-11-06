@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios'; // Import the centralized API instance
 
 const CreateTicket = () => {
   const [subject, setSubject] = useState('');
@@ -47,10 +47,7 @@ const CreateTicket = () => {
     };
 
     try {
-      const config = {
-        headers: { Authorization: `Bearer ${token}` },
-      };
-      const response = await axios.post('http://localhost:3000/api/tickets', ticketData, config);
+      const response = await api.post('/tickets', ticketData);
 
       if (response.data.success) {
         alert('Ticket created successfully!');

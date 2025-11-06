@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios'; // Import the centralized API instance
 
 const Dashboard = () => {
   const [tickets, setTickets] = useState([]);
@@ -22,11 +22,8 @@ const Dashboard = () => {
       }
 
       try {
-        const config = {
-          headers: { Authorization: `Bearer ${token}` },
-        };
-        // Assuming the backend returns tickets for the logged-in user
-        const response = await axios.get('http://localhost:3000/api/tickets', config);
+        // Use the new api instance. The base URL and auth header are handled automatically.
+        const response = await api.get('/tickets');
         if (response.data.success) {
           const userTickets = response.data.tickets;
           setTickets(userTickets);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import axios from 'axios';
+import api from '../api/axios'; // Import the centralized API instance
 
 const AdminDashboard = () => {
     const [activeSection, setActiveSection] = useState('dashboard');
@@ -74,16 +74,10 @@ const AdminDashboard = () => {
             }
 
             try {
-                const config = {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                };
-
                 // Use Promise.all to fetch users and tickets concurrently
                 const [usersResponse, ticketsResponse] = await Promise.all([
-                    axios.get('http://localhost:3000/api/users', config),
-                    axios.get('http://localhost:3000/api/tickets', config)
+                    api.get('/users'), // Use the new api instance
+                    api.get('/tickets') // No need for full URL or config
                 ]);
 
                 if (usersResponse.data.success) {
@@ -188,14 +182,8 @@ const AdminDashboard = () => {
             return;
         }
 
-        const config = {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        };
-
         try {
-            const response = await axios.post('http://localhost:3000/api/users', formData, config);
+            const response = await api.post('/users', formData);
             if (response.data.success) {
                 const newUser = { ...response.data.user, status: 'active' };
                 setUsers((prev) => [...prev, newUser]);
@@ -224,11 +212,7 @@ const AdminDashboard = () => {
         const token = localStorage.getItem('token');
 
         try {
-            const response = await axios.put(
-                `http://localhost:3000/api/users/${userId}`,
-                { status: newStatus },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await api.put(`/users/${userId}`, { status: newStatus });
 
             if (response.data.success) {
                 setUsers(prev =>
@@ -246,9 +230,7 @@ const AdminDashboard = () => {
         if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
             const token = localStorage.getItem('token');
             try {
-                await axios.delete(`http://localhost:3000/api/users/${userId}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                await api.delete(`/users/${userId}`);
                 setUsers(prev => prev.filter(u => u.id !== userId));
                 alert('User deleted successfully!');
             } catch (error) {
@@ -289,11 +271,7 @@ const AdminDashboard = () => {
         delete payload.user_type; // Remove frontend-specific key
 
         try {
-            const response = await axios.put(
-                `http://localhost:3000/api/users/${id}`,
-                payload,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const response = await api.put(`/users/${id}`, payload);
 
             if (response.data.success) {
                 setUsers((prev) =>
