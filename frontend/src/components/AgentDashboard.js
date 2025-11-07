@@ -135,12 +135,12 @@ const AgentDashboard = () => {
             <div className="agent-role">{currentAgent.role}</div>
           </div>
         </div>
-        
+
         <div className="nav-menu">
           <a href="#" className="nav-item active">
             <i className="fas fa-tachometer-alt"></i> Dashboard
           </a>
-          <a href="/login" className="nav-item" onClick={() => localStorage.clear()}>
+          <a href="/" className="nav-item" onClick={() => localStorage.clear()}>
             <i className="fas fa-sign-out-alt"></i> Logout
           </a>
         </div>
@@ -158,11 +158,15 @@ const AgentDashboard = () => {
           </div>
           <div className="stat-card">
             <div className="stat-label">Open</div>
-            <div className="stat-value">{openTickets.filter(t => t.status === 'Open').length}</div>
+            <div className="stat-value">
+              {openTickets.filter((t) => t.status === "Open").length}
+            </div>
           </div>
           <div className="stat-card">
             <div className="stat-label">In Progress</div>
-            <div className="stat-value">{tickets.filter(t => t.status === 'In Progress').length}</div>
+            <div className="stat-value">
+              {tickets.filter((t) => t.status === "In Progress").length}
+            </div>
           </div>
           <div className="stat-card">
             <div className="stat-label">Resolved</div>
@@ -170,34 +174,33 @@ const AgentDashboard = () => {
           </div>
         </div>
 
-        <h2 style={{margin: '20px 0 10px 0', color: 'var(--dark)'}}>Active Tickets</h2>
+        <h2 style={{ margin: "20px 0 10px 0", color: "var(--dark)" }}>
+          Active Tickets
+        </h2>
         <div className="ticket-list">
           <div className="ticket-header">
             <span>TICKET ID</span>
             <span>DATE</span>
             <span>SUBJECT</span>
             <span>CATEGORY</span>
-            <span>ASSIGNED AGENT</span>
-            <span>LAST REPLY</span>
             <span>STATUS</span>
           </div>
-          {openTickets.map(ticket => (
-            <div key={ticket.id} className="ticket-item" onClick={() => handleTicketClick(ticket)}>
+          {openTickets.map((ticket) => (
+            <div
+              key={ticket.id}
+              className="ticket-item"
+              onClick={() => handleTicketClick(ticket)}
+            >
               <span className="ticket-id">#{ticket.id}</span>
               <span>{formatDate(ticket.createdAt)}</span>
               <span>{ticket.subject}</span>
               <span>{ticket.category}</span>
-              <span className="assigned-agent">
-                {ticket.assignedAgent}
-              </span>
               <span>
-                {ticket.conversation.length > 0 
-                  ? ticket.conversation[ticket.conversation.length - 1].sender
-                  : 'No replies'
-                }
-              </span>
-              <span>
-                <span className={`ticket-status status-${ticket.status.toLowerCase().replace(' ', '-')}`}>
+                <span
+                  className={`ticket-status status-${ticket.status
+                    .toLowerCase()
+                    .replace(" ", "-")}`}
+                >
                   {ticket.status}
                 </span>
               </span>
@@ -205,32 +208,27 @@ const AgentDashboard = () => {
           ))}
         </div>
 
-        <h2 style={{margin: '30px 0 10px 0', color: 'var(--dark)'}}>Resolved Tickets</h2>
+        <h2 style={{ margin: "30px 0 10px 0", color: "var(--dark)" }}>
+          Resolved Tickets
+        </h2>
         <div className="ticket-list">
           <div className="ticket-header">
             <span>TICKET ID</span>
             <span>DATE</span>
             <span>SUBJECT</span>
             <span>CATEGORY</span>
-            <span>ASSIGNED AGENT</span>
-            <span>LAST REPLY</span>
             <span>STATUS</span>
           </div>
-          {resolvedTickets.map(ticket => (
-            <div key={ticket.id} className="ticket-item" onClick={() => handleTicketClick(ticket)}>
+          {resolvedTickets.map((ticket) => (
+            <div
+              key={ticket.id}
+              className="ticket-item"
+              onClick={() => handleTicketClick(ticket)}
+            >
               <span className="ticket-id">#{ticket.id}</span>
               <span>{formatDate(ticket.createdAt)}</span>
               <span>{ticket.subject}</span>
               <span>{ticket.category}</span>
-              <span className="assigned-agent">
-                {ticket.assignedAgent}
-              </span>
-              <span>
-                {ticket.conversation.length > 0 
-                  ? ticket.conversation[ticket.conversation.length - 1].sender
-                  : 'No replies'
-                }
-              </span>
               <span>
                 <span className="ticket-status status-resolved">
                   {ticket.status}
@@ -245,7 +243,9 @@ const AgentDashboard = () => {
           <div className="modal-overlay" onClick={closeModal}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>Ticket #{selectedTicket.id}: {selectedTicket.subject}</h2>
+                <h2>
+                  Ticket #{selectedTicket.id}: {selectedTicket.subject}
+                </h2>
                 <button className="modal-close" onClick={closeModal}>
                   <i className="fas fa-times"></i>
                 </button>
@@ -263,7 +263,9 @@ const AgentDashboard = () => {
                   </div>
                   <div className="meta-item">
                     <label>Priority:</label>
-                    <span className={`priority-${selectedTicket.priority.toLowerCase()}`}>
+                    <span
+                      className={`priority-${selectedTicket.priority.toLowerCase()}`}
+                    >
                       {selectedTicket.priority}
                     </span>
                   </div>
@@ -273,9 +275,11 @@ const AgentDashboard = () => {
                   </div>
                   <div className="meta-item">
                     <label>Status:</label>
-                    <select 
-                      value={selectedTicket.status} 
-                      onChange={(e) => handleStatusChange(selectedTicket.id, e.target.value)}
+                    <select
+                      value={selectedTicket.status}
+                      onChange={(e) =>
+                        handleStatusChange(selectedTicket.id, e.target.value)
+                      }
                       className="status-select"
                     >
                       <option value="New">New</option>
@@ -289,7 +293,7 @@ const AgentDashboard = () => {
                 <div className="ticket-description">
                   <h3>Issue Description</h3>
                   <p>{selectedTicket.description}</p>
-                  
+
                   {selectedTicket.attachments.length > 0 && (
                     <div className="attachments-section">
                       <h4>Attachments:</h4>
@@ -308,7 +312,14 @@ const AgentDashboard = () => {
                   <h3>Conversation</h3>
                   <div className="conversation-messages">
                     {selectedTicket.conversation.map((msg, index) => (
-                      <div key={index} className={`message ${msg.sender.includes('Agent') ? 'agent-message' : 'user-message'}`}>
+                      <div
+                        key={index}
+                        className={`message ${
+                          msg.sender.includes("Agent")
+                            ? "agent-message"
+                            : "user-message"
+                        }`}
+                      >
                         <div className="message-header">
                           <strong>{msg.sender}</strong>
                           <span className="message-time">{msg.time}</span>
@@ -321,14 +332,17 @@ const AgentDashboard = () => {
 
                 <div className="reply-section">
                   <h3>Reply to Ticket</h3>
-                  <textarea 
-                    className="reply-textarea" 
+                  <textarea
+                    className="reply-textarea"
                     placeholder="Type your reply message here..."
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     rows="4"
                   ></textarea>
-                  <button className="btn btn-primary" onClick={handleReplySubmit}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleReplySubmit}
+                  >
                     Send Reply
                   </button>
                 </div>
@@ -338,7 +352,7 @@ const AgentDashboard = () => {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 export default AgentDashboard;

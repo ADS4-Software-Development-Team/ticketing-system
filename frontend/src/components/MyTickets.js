@@ -1,105 +1,80 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/axios';
 
 const MyTickets = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketModal, setShowTicketModal] = useState(false);
+  const [tickets, setTickets] = useState([]);
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [sortBy, setSortBy] = useState('Newest');
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  // Sample tickets data with conversation history
-  const [tickets, setTickets] = useState([
-    {
-      id: 'IT-12456',
-      subject: 'Cannot connect to the office Wi-Fi',
-      status: 'In Progress',
-      priority: 'High',
-      category: 'Networking',
-      createdAt: '2024-01-15',
-      updatedAt: '2 hours ago',
-      assignedTo: 'Jane Doe',
-      description: 'I am unable to connect to the office Wi-Fi on my laptop. The network appears in the list but when I try to connect, it keeps asking for credentials and then fails.',
-      attachments: ['wifi_error.png'],
-      conversation: [
-        {
-          sender: 'You',
-          message: 'I am unable to connect to the office Wi-Fi on my laptop. The network appears in the list but when I try to connect, it keeps asking for credentials and then fails.',
-          time: '2 days ago'
-        },
-        {
-          sender: 'Jane Doe (Support Agent)',
-          message: 'Thanks for reporting this issue. I can see your device is having authentication problems. Can you try forgetting the network and reconnecting? Also, make sure you\'re using the correct domain credentials.',
-          time: '1 day ago'
-        },
-        {
-          sender: 'You',
-          message: 'I tried forgetting the network and reconnecting, but I\'m still having the same issue. I\'m using the same credentials that work on my other devices.',
-          time: '5 hours ago'
-        },
-        {
-          sender: 'Jane Doe (Support Agent)',
-          message: 'I\'ve reset your network profile on our end. Please try connecting again. If it still doesn\'t work, I\'ll need to check your device settings remotely.',
-          time: '2 hours ago'
+  useEffect(() => {
+    const fetchTickets = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('You must be logged in to view your tickets.');
+        navigate('/login');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const user = JSON.parse(localStorage.getItem('user'));
+        const response = await api.get('/tickets');
+        if (response.data.success) {
+          // 1. Filter tickets to get only those created by the logged-in user.
+          const myTickets = response.data.tickets.filter(ticket => ticket.user_id === user._id);
+          
+          // 2. Map the filtered tickets to the format the component expects.
+          const formattedTickets = myTickets.map(ticket => ({
+              id: ticket._id,
+              subject: ticket.title,
+              status: ticket.status,
+              priority: ticket.priority,
+              category: ticket.category,
+              createdAt: ticket.created_at,
+              updatedAt: new Date(ticket.updated_at).toLocaleString(),
+              assignedTo: ticket.agent?.full_name || 'Unassigned',
+              description: ticket.description,
+          }));
+          setTickets(formattedTickets);
         }
-      ]
-    },
-    {
-      id: 'IT-12455',
-      subject: 'Software installation request for Figma',
-      status: 'Open',
-      priority: 'Medium',
-      category: 'Software',
-      createdAt: '2024-01-16',
-      updatedAt: '1 day ago',
-      assignedTo: 'John Smith',
-      description: 'I need Figma installed on my computer for design collaboration with the marketing team. This is required for an upcoming project.',
-      attachments: [],
-      conversation: [
-        {
-          sender: 'You',
-          message: 'I need Figma installed on my computer for design collaboration with the marketing team. This is required for an upcoming project.',
-          time: '1 day ago'
-        },
-        {
-          sender: 'John Smith (Support Agent)',
-          message: 'I\'ve received your software request. I\'ll need approval from your manager before proceeding with the installation. Could you please have them approve the request in the system?',
-          time: '1 day ago'
-        }
-      ]
-    },
-    {
-      id: 'IT-12450',
-      subject: 'Request for a new keyboard',
-      status: 'Resolved',
-      priority: 'Low',
-      category: 'Hardware',
-      createdAt: '2024-01-12',
-      updatedAt: '3 days ago',
-      assignedTo: 'Samantha Bee',
-      description: 'My current keyboard has several keys that are not working properly, making it difficult to type efficiently.',
-      attachments: ['keyboard_issue.jpg'],
-      conversation: [
-        {
-          sender: 'You',
-          message: 'My current keyboard has several keys that are not working properly, making it difficult to type efficiently.',
-          time: '5 days ago'
-        },
-        {
-          sender: 'Samantha Bee (Support Agent)',
-          message: 'I\'ve processed your hardware request. A new keyboard has been ordered and will be delivered to your desk by tomorrow morning.',
-          time: '4 days ago'
-        },
-        {
-          sender: 'Samantha Bee (Support Agent)',
-          message: 'The new keyboard has been delivered and installed. Please confirm if everything is working properly now.',
-          time: '3 days ago'
-        },
-        {
-          sender: 'You',
-          message: 'Yes, the new keyboard is working perfectly. Thank you for the quick resolution!',
-          time: '3 days ago'
-        }
-      ]
+      } catch (error) {
+        console.error('Failed to fetch tickets:', error);
+        alert('Could not load your tickets. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, [navigate]);
+
+  const displayedTickets = useMemo(() => {
+    let filtered = tickets;
+
+    // Apply status filter
+    if (filterStatus !== 'All') {
+      filtered = filtered.filter(ticket => ticket.status === filterStatus);
     }
-  ]);
+
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'Oldest':
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        case 'Priority':
+          const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+          return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+        case 'Newest':
+        default:
+          return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+    });
+  }, [tickets, filterStatus, sortBy]);
 
   const handleViewTicket = (ticket) => {
     setSelectedTicket(ticket);
@@ -140,16 +115,17 @@ const MyTickets = () => {
 
       <div className="filters">
         <div className="filter-group">
-          <select className="filter-select">
-            <option>Status: All</option>
-            <option>Open</option>
-            <option>In Progress</option>
-            <option>Resolved</option>
+          <select className="filter-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <option value="All">Status: All</option>
+            <option value="New">New</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
           </select>
-          <select className="filter-select">
-            <option>Sort by: Newest</option>
-            <option>Oldest</option>
-            <option>Priority</option>
+          <select className="filter-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="Newest">Sort by: Newest</option>
+            <option value="Oldest">Oldest</option>
+            <option value="Priority">Priority</option>
           </select>
         </div>
       </div>
@@ -159,17 +135,15 @@ const MyTickets = () => {
           <span>TICKET ID</span>
           <span>CATEGORY</span>
           <span>SUBJECT</span>
-          <span>AGENT</span>
           <span>STATUS</span>
           <span>ACTIONS</span>
         </div>
         
-        {tickets.map(ticket => (
+        {loading ? <p style={{textAlign: 'center', padding: '20px'}}>Loading tickets...</p> : displayedTickets.map(ticket => (
           <div key={ticket.id} className="ticket-item">
             <span className="ticket-id">#{ticket.id}</span>
             <span className="ticket-category">{ticket.category}</span>
             <span className="ticket-subject">{ticket.subject}</span>
-            <span className="ticket-agent">{ticket.assignedTo}</span>
             <span>
               <span className={`ticket-status status-${ticket.status.toLowerCase().replace(' ', '-')}`}>
                 {ticket.status}
@@ -257,11 +231,11 @@ const MyTickets = () => {
             <div className="conversation-messages">
               {selectedTicket.conversation.map((message, index) => (
                 <div 
-                  key={index} 
-                  className={`message ${message.sender.includes('Support Agent') ? 'agent-message' : 'user-message'}`}
+                  key={index}
+                  className={`message ${message.sender_type === 'agent' ? 'agent-message' : 'user-message'}`}
                 >
                   <div className="message-header">
-                    <strong>{message.sender}</strong>
+                    <strong>{message.sender_name}</strong>
                     <span className="message-time">{message.time}</span>
                   </div>
                   <div className="message-content">

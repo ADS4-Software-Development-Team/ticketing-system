@@ -26,8 +26,9 @@ const CreateTicket = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const user = JSON.parse(localStorage.getItem('user'));
     const token = localStorage.getItem('token');
-    if (!token) {
+    if (!token || !user) {
       alert('You must be logged in to create a ticket.');
       navigate('/login');
       return;
@@ -44,6 +45,7 @@ const CreateTicket = () => {
       description,
       category,
       priority,
+      user_id: user._id, // Add the user's ID to the ticket data
     };
 
     try {
@@ -130,14 +132,6 @@ const CreateTicket = () => {
                                 <h3>High</h3>
                                 <p>Critical issue, work is blocked</p>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* File upload is not fully implemented in this step */}
-                    <div class="form-group">
-                        <label class="form-label">Attachments</label>
-                        <div class="file-upload">
-                            <p>Drag & drop files here or click to browse</p>
                         </div>
                     </div>
 
