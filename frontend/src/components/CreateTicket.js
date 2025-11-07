@@ -26,8 +26,9 @@ const CreateTicket = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const user = JSON.parse(localStorage.getItem('user'));
     const token = localStorage.getItem('token');
-    if (!token) {
+    if (!token || !user) {
       alert('You must be logged in to create a ticket.');
       navigate('/login');
       return;
@@ -44,6 +45,7 @@ const CreateTicket = () => {
       description,
       category,
       priority,
+      user_id: user._id, // Add the user's ID to the ticket data
     };
 
     try {
