@@ -20,6 +20,7 @@ const MyTickets = () => {
 
       try {
         setLoading(true);
+        const user = JSON.parse(localStorage.getItem('user'));
         const response = await api.get('/tickets');
         if (response.data.success) {
           // Map backend data to the format your component expects
@@ -35,7 +36,7 @@ const MyTickets = () => {
             description: ticket.description,
             attachments: ticket.attachments || [],
             conversation: ticket.conversation || [],
-          }));
+          })).filter(ticket => ticket.user_id === user._id);
           setTickets(formattedTickets);
         }
       } catch (error) {
