@@ -25,20 +25,21 @@ const MyTickets = () => {
         const user = JSON.parse(localStorage.getItem('user'));
         const response = await api.get('/tickets');
         if (response.data.success) {
-          // Map backend data to the format your component expects
-          const formattedTickets = response.data.tickets.map(ticket => ({
-            id: ticket._id,
-            subject: ticket.title,
-            status: ticket.status,
-            priority: ticket.priority,
-            category: ticket.category,
-            createdAt: ticket.created_at,
-            updatedAt: new Date(ticket.updated_at).toLocaleString(),
-            assignedTo: ticket.agent?.full_name || 'Unassigned',
-            description: ticket.description,
-            attachments: ticket.attachments || [],
-            conversation: ticket.conversation || [],
-          })).filter(ticket => ticket.user_id === user._id);
+          // 1. Filter tickets to get only those created by the logged-in user.
+          const myTickets = response.data.tickets.filter(ticket => ticket.user_id === user._id);
+          
+          // 2. Map the filtered tickets to the format the component expects.
+          const formattedTickets = myTickets.map(ticket => ({
+              id: ticket._id,
+              subject: ticket.title,
+              status: ticket.status,
+              priority: ticket.priority,
+              category: ticket.category,
+              createdAt: ticket.created_at,
+              updatedAt: new Date(ticket.updated_at).toLocaleString(),
+              assignedTo: ticket.agent?.full_name || 'Unassigned',
+              description: ticket.description,
+          }));
           setTickets(formattedTickets);
         }
       } catch (error) {
