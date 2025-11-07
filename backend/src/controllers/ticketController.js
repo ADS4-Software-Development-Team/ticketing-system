@@ -4,8 +4,8 @@ import { supabase } from "../config/db.js";
 export const createTicket = async (req, res) => {
   try {
     // user_id should come from authenticated user (req.user) set by auth middleware
-    const { title, description, category, priority } = req.body;
-    const user_id = req.user.id; // Assuming auth middleware adds user to req
+    const { title, description, category, priority, user_id: bodyUserId } = req.body;
+    const user_id = req.user._id; // Correctly get the user ID from the authenticated user object.
 
     if (!title || !description) {
       return res.status(400).json({ success: false, message: 'Title and description are required' });
