@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
@@ -6,6 +6,8 @@ const MyTickets = () => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [tickets, setTickets] = useState([]);
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [sortBy, setSortBy] = useState('Newest');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -50,6 +52,29 @@ const MyTickets = () => {
     fetchTickets();
   }, [navigate]);
 
+  const displayedTickets = useMemo(() => {
+    let filtered = tickets;
+
+    // Apply status filter
+    if (filterStatus !== 'All') {
+      filtered = filtered.filter(ticket => ticket.status === filterStatus);
+    }
+
+    // Apply sorting
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'Oldest':
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        case 'Priority':
+          const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+          return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+        case 'Newest':
+        default:
+          return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+    });
+  }, [tickets, filterStatus, sortBy]);
+
   const handleViewTicket = (ticket) => {
     setSelectedTicket(ticket);
     setShowTicketModal(true);
@@ -89,16 +114,17 @@ const MyTickets = () => {
 
       <div className="filters">
         <div className="filter-group">
-          <select className="filter-select">
-            <option>Status: All</option>
-            <option>Open</option>
-            <option>In Progress</option>
-            <option>Resolved</option>
+          <select className="filter-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <option value="All">Status: All</option>
+            <option value="New">New</option>
+            <option value="Open">Open</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
           </select>
-          <select className="filter-select">
-            <option>Sort by: Newest</option>
-            <option>Oldest</option>
-            <option>Priority</option>
+          <select className="filter-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="Newest">Sort by: Newest</option>
+            <option value="Oldest">Oldest</option>
+            <option value="Priority">Priority</option>
           </select>
         </div>
       </div>
@@ -108,17 +134,15 @@ const MyTickets = () => {
           <span>TICKET ID</span>
           <span>CATEGORY</span>
           <span>SUBJECT</span>
-          <span>AGENT</span>
           <span>STATUS</span>
           <span>ACTIONS</span>
         </div>
         
-        {loading ? <p style={{textAlign: 'center', padding: '20px'}}>Loading tickets...</p> : tickets.map(ticket => (
+        {loading ? <p style={{textAlign: 'center', padding: '20px'}}>Loading tickets...</p> : displayedTickets.map(ticket => (
           <div key={ticket.id} className="ticket-item">
             <span className="ticket-id">#{ticket.id}</span>
             <span className="ticket-category">{ticket.category}</span>
             <span className="ticket-subject">{ticket.subject}</span>
-            <span className="ticket-agent">{ticket.assignedTo}</span>
             <span>
               <span className={`ticket-status status-${ticket.status.toLowerCase().replace(' ', '-')}`}>
                 {ticket.status}
