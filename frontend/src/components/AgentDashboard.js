@@ -183,8 +183,6 @@ const AgentDashboard = () => {
             <span>DATE</span>
             <span>SUBJECT</span>
             <span>CATEGORY</span>
-            <span>ASSIGNED AGENT</span>
-            <span>LAST REPLY</span>
             <span>STATUS</span>
           </div>
           {openTickets.map((ticket) => (
@@ -197,12 +195,6 @@ const AgentDashboard = () => {
               <span>{formatDate(ticket.createdAt)}</span>
               <span>{ticket.subject}</span>
               <span>{ticket.category}</span>
-              <span className="assigned-agent">{ticket.assignedAgent}</span>
-              <span>
-                {ticket.conversation.length > 0
-                  ? ticket.conversation[ticket.conversation.length - 1].sender
-                  : "No replies"}
-              </span>
               <span>
                 <span
                   className={`ticket-status status-${ticket.status
@@ -225,8 +217,6 @@ const AgentDashboard = () => {
             <span>DATE</span>
             <span>SUBJECT</span>
             <span>CATEGORY</span>
-            <span>ASSIGNED AGENT</span>
-            <span>LAST REPLY</span>
             <span>STATUS</span>
           </div>
           {resolvedTickets.map((ticket) => (
@@ -239,12 +229,6 @@ const AgentDashboard = () => {
               <span>{formatDate(ticket.createdAt)}</span>
               <span>{ticket.subject}</span>
               <span>{ticket.category}</span>
-              <span className="assigned-agent">{ticket.assignedAgent}</span>
-              <span>
-                {ticket.conversation.length > 0
-                  ? ticket.conversation[ticket.conversation.length - 1].sender
-                  : "No replies"}
-              </span>
               <span>
                 <span className="ticket-status status-resolved">
                   {ticket.status}

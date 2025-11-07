@@ -133,14 +133,6 @@ const CreateTicket = () => {
                         </div>
                     </div>
 
-                    {/* File upload is not fully implemented in this step */}
-                    <div class="form-group">
-                        <label class="form-label">Attachments</label>
-                        <div class="file-upload">
-                            <p>Drag & drop files here or click to browse</p>
-                        </div>
-                    </div>
-
                     <div class="form-actions">
                         <button type="button" className="btn btn-outline" onClick={() => navigate('/user-dash')}>Cancel</button>
                         <button type="submit" className="btn btn-primary">Submit Ticket</button>

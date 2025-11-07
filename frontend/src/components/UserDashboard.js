@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios'; // Import the centralized API instance
 
 const Dashboard = () => {
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [sortBy, setSortBy] = useState('Newest');
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState({
     new: 0,
@@ -15,25 +17,27 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchTickets = async () => {
       const token = localStorage.getItem('token');
-      if (!token) {
+      const user = JSON.parse(localStorage.getItem('user'));
+
+      if (!token || !user) {
         alert('You must be logged in to view this page.');
         navigate('/login');
         return;
       }
 
       try {
-        // Use the new api instance. The base URL and auth header are handled automatically.
         const response = await api.get('/tickets');
         if (response.data.success) {
-          const userTickets = response.data.tickets;
-          setTickets(userTickets);
+          // Filter tickets to only show those created by the logged-in user.
+          const myTickets = response.data.tickets.filter(ticket => ticket.user_id === user._id);
+          setTickets(myTickets);
 
           // Calculate stats
           setStats({
-            new: userTickets.filter(t => t.status === 'New').length,
-            open: userTickets.filter(t => t.status === 'Open').length,
-            inProgress: userTickets.filter(t => t.status === 'In Progress').length,
-            resolved: userTickets.filter(t => t.status === 'Resolved').length,
+            new: myTickets.filter(t => t.status === 'New').length,
+            open: myTickets.filter(t => t.status === 'Open').length,
+            inProgress: myTickets.filter(t => t.status === 'In Progress').length,
+            resolved: myTickets.filter(t => t.status === 'Resolved').length,
           });
         }
       } catch (error) {
@@ -44,6 +48,25 @@ const Dashboard = () => {
     fetchTickets();
   }, [navigate]);
 
+  const displayedTickets = tickets
+    .filter(ticket => {
+      if (filterStatus === 'All') {
+        return true;
+      }
+      return ticket.status === filterStatus;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'Oldest':
+          return new Date(a.created_at) - new Date(b.created_at);
+        case 'Priority':
+          const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+          return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+        case 'Newest':
+        default:
+          return new Date(b.created_at) - new Date(a.created_at);
+      }
+    });
   return (
      <div class="container">
       
@@ -85,16 +108,17 @@ const Dashboard = () => {
 
                 <div class="filters">
                     <div class="filter-group">
-                        <select class="filter-select">
-                            <option>Status: All</option>
-                            <option>Open</option>
-                            <option>In Progress</option>
-                            <option>Resolved</option>
+                        <select class="filter-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                            <option value="All">Status: All</option>
+                            <option value="New">New</option>
+                            <option value="Open">Open</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
                         </select>
-                        <select class="filter-select">
-                            <option>Sort by: Newest</option>
-                            <option>Oldest</option>
-                            <option>Priority</option>
+                        <select class="filter-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                            <option value="Newest">Sort by: Newest</option>
+                            <option value="Oldest">Oldest</option>
+                            <option value="Priority">Priority</option>
                         </select>
                     </div>
                 </div>
@@ -107,7 +131,7 @@ const Dashboard = () => {
                         <span>PRIORITY</span>
                         <span>LAST UPDATED</span>
                     </div>
-                    {tickets.slice(0, 5).map(ticket => (
+                    {displayedTickets.slice(0, 5).map(ticket => (
                         <div class="ticket-item" key={ticket._id}>
                             <span class="ticket-id">#{String(ticket._id).slice(-6)}</span>
                             <span>{ticket.title}</span>
